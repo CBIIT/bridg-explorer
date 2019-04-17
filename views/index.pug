@@ -1,0 +1,20 @@
+extends layout
+
+block content
+  div(role='navigation' class='navbar navbar-default navbar-static-top')
+    div(class='container')
+      div(class='row')
+        div(class='col-sm-4 col-md-4')
+          include ./search_panel.pug
+        div(class='navbar-header col-sm-4 col-md-4')
+          include ./node_display.pug
+          //- div(class='logo-well')
+          //- a(href="https://bridgmodel.nci.nih.gov/sites/nci-bridg/files/images/logo/nci-bridg.svg")
+          //-   img#logo(src="https://bridgmodel.nci.nih.gov/sites/nci-bridg/files/images/logo/nci-bridg.svg" alt="Biomedical Research Integrated Domain Group")
+          //- div(class='navbar-brand')
+          //-   div(class='brand') BRIDG Tools
+        div(class='navbar-header col-sm-4 col-md-4')
+          include ./graph_display.pug
+    include ./result_table.pug
+    include ./node_display.pug
+  script(src="javascripts/bundle.js")

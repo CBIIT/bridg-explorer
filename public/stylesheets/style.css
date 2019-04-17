@@ -1,0 +1,36 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+table.boog {
+    color: red;
+}
+
+svg.graph {
+}
+
+.node {
+    stroke: #222;
+    stroke-width: 1.5px;
+}
+.node.Class {
+    fill: #888;
+}
+.node.Property {
+    fill: #BBB;
+}
+.link {
+    stroke: #999;
+    stroke-opacity: .6;
+    stroke-width: 3px;
+}
+text.node_lbl {
+    font-size: 10pt;
+    fill: black;
+    text-anchor: middle;
+}

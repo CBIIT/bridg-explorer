@@ -1,0 +1,14 @@
+
+ul(class='nav navbar-nav')
+  li
+    form#ent-search(role='search' class='navbar-form')
+      div(class='form-group')
+        input(type='txt' value='' placeholder='search class or property names' class='form-control' name='search')
+        input(type='txt' value='' class='form-control' name='matchmin' placeholder='minimum match score')
+        button#ent-search-btn(class='btn btn-default' type='submit') Search Names
+  li
+    form#doc-search(role='search' class='navbar-form')
+      div(class='form-group')
+        input(type='txt' value='' placeholder='search by documentation' class='form-control' name='search')
+        input(type='txt' value='' class='form-control' name='matchmin' placeholder='minimum match score')
+        button#doc-search-btn(class='btn btn-default' type='submit') Search Docs
