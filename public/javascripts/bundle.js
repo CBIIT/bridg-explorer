@@ -68444,17 +68444,26 @@ function entSearch(e) {
 	  if (ent == null) { console.log("ent is null") }
           else {
             var r = $("<tr>"+
-                      "<td class='entity' data-entity-id='"+ent.id+"'>"+
+                      "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
                       ent.name + "</td><td>" +
 	              ent.ent + "</td>" +
-                      "<td class='entity' data-entity-id='"+ent.owning_class_id+"'>"+
+                      "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
 	              (ent.owning_class ? ent.owning_class : "N/A") + "</td><td>" +
 	              ent.doc + "</td><td>" +
 	              ent.score + "</td></tr>").appendTo(t)
             r.find("td.entity").click(function () {
               showEnt($(this).attr('data-entity-id'))
               // showNeighbors($(this).attr('data-entity-id') )
-              showAncestors($(this).attr('data-entity-id') )
+              switch ($(this).attr('data-entity-type')) {
+              case 'Class':
+                showAncestors($(this).attr('data-entity-id') )
+                break
+              case 'Property':
+                showClassAndSibs($(this).attr('data-entity-id') )
+                break
+              default:
+                console.error("Unhandled entity type")
+              }
             })
             
 	  }
@@ -68472,9 +68481,27 @@ function showEnt(ent_id) {
       $("#node_display_head").empty()
       $("#node_display_head").append( $("<b>"+ent.name + " ("+ent.ent+")</b>") )
       $("#node_display").empty()
-      $("<ul>"+"<li>"+ent.definition+"</li><li>"+ent.examples+"</li>"+
-        (ent.notes ? "<li>"+ent.notes+"</li>" : "")).appendTo($("#node_display"))
-    }, "json");
+      $("<em>DOC</em><ul>"+"<li>"+ent.definition+"</li><li>"+ent.examples+"</li>"+
+        (_.size(ent.notes) ? "<li>"+ent.notes+"</li>" : "")+"</ul>")
+        .appendTo($("#node_display"))
+      if (ent.ent == 'Class') {
+        $("<em>PROPERTIES</em>").appendTo($("#node_display"))
+        api
+          .getProperties(ent_id)
+          .then( props => {
+            if (_.isEmpty(props))
+              return null
+            props.forEach(
+              prop => {
+                $("<ul><strong>"+prop.name+"</strong><li>"+prop.definition+"</li><li>"+
+                  prop.examples+"</li>"+
+                  (_.size(prop.notes) ? "<li>"+prop.notes+"</li>" : "")+"</ul>")
+                  .appendTo($("#node_display"))
+              })
+          })
+        $("</ul>").appendTo($("#node_display"))
+      }
+    },"json")
 }
 
 
@@ -68483,13 +68510,14 @@ function showNeighbors(cls_id) {
   $("#graph_display").empty()
   api
     .getNeighbors(cls_id)
-      .then(graph => {
-        d3api.renderSimulation("#graph_display",graph, width, height)
-        d3.select("#graph_display")
-          .selectAll(".node")
-          .on("click", (d) => showEnt(d.id))
-
-      })
+    .then(graph => {
+      if (_.isEmpty(graph))
+        return null
+      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3.select("#graph_display")
+        .selectAll(".node")
+        .on("click", (d) => showEnt(d.id))
+    })
 }
 
 function showAncestors(cls_id) {
@@ -68497,13 +68525,31 @@ function showAncestors(cls_id) {
   $("#graph_display").empty()
   api
     .getAncestors(cls_id)
-      .then(graph => {
-        d3api.renderSimulation("#graph_display",graph, width, height)
-        d3.select("#graph_display")
-          .selectAll(".node")
-          .on("click", (d) => showEnt(d.id))
+    .then(graph => {
+      if (_.isEmpty(graph))
+        return null
+      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3.select("#graph_display")
+        .selectAll(".node")
+        .on("click", (d) => showEnt(d.id))
+      
+    })
+}
 
-      })
+function showClassAndSibs(prop_id) {
+  var width = 350, height = 320;
+  $("#graph_display").empty()
+  api
+    .getClassAndSibs(prop_id)
+    .then(graph => {
+      if (_.isEmpty(graph))
+        return null
+      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3.select("#graph_display")
+        .selectAll(".node")
+        .on("click", (d) => showEnt(d.id))
+      
+    })
 }
 
 
@@ -68787,8 +68833,12 @@ function getProperties(cls_id) {
       session.close();
       if (_.isEmpty(result.records))
 	return null;
-      var record = result.records[0];
-      return new Entity(record.toObject());
+      var nodes = []
+      result.records.forEach(
+        rec => { nodes.push(new Entity(rec.toObject())) }
+      )
+      console.log(nodes)
+      return nodes
     })
     .catch(error => {
       session.close();
@@ -68810,7 +68860,6 @@ function getAncestors(cls_id) {
       if (_.isEmpty(result.records))
 	return null;
       var res = result.records[0].get('p');
-      console.log(res)
       var nodes = [], links = [], i;
       nodes.push({ title: res[0].properties.name, label:'Class',
                    id: res[0].properties.id })
@@ -68824,6 +68873,30 @@ function getAncestors(cls_id) {
     .catch(error => {
       session.close();
       throw error;
+    });
+}
+
+function getClassAndSibs(prop_id) {
+  var session = driver.session();
+  return session.run(
+    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class)-[:has_property]->(s:Property) WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
+    {prop_id:prop_id})
+    .then(results => {
+      session.close();
+      if (_.isEmpty(results))
+        return null
+      var nodes = [], links = []
+      var res = results.records[0];
+      nodes.push( { title: res.get('cls_name'), label:'Class',
+                    id: res.get('cls_id')} )
+      res.get('props').forEach( prop => {
+        nodes.push( { title: prop[0], label:'Property',
+                      id: prop[1] }) })
+      var i;
+      for ( i=1; i < _.size(nodes); i=i+1) {
+        links.push({source:0, target:i});
+      }
+      return {nodes, links};
     });
 }
 
@@ -68866,5 +68939,6 @@ exports.searchEnts = searchEnts;
 exports.getEntity = getEntity;
 exports.getProperties = getProperties;
 exports.getAncestors = getAncestors;
+exports.getClassAndSibs = getClassAndSibs;
 
 },{"./models/Cls":269,"./models/Entity":270,"./models/Movie":271,"./models/MovieCast":272,"./models/Prop":273,"lodash":200,"neo4j-driver":201}]},{},[267,268,274]);

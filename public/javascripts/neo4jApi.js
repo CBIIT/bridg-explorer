@@ -83,8 +83,12 @@ function getProperties(cls_id) {
       session.close();
       if (_.isEmpty(result.records))
 	return null;
-      var record = result.records[0];
-      return new Entity(record.toObject());
+      var nodes = []
+      result.records.forEach(
+        rec => { nodes.push(new Entity(rec.toObject())) }
+      )
+      console.log(nodes)
+      return nodes
     })
     .catch(error => {
       session.close();
@@ -106,7 +110,6 @@ function getAncestors(cls_id) {
       if (_.isEmpty(result.records))
 	return null;
       var res = result.records[0].get('p');
-      console.log(res)
       var nodes = [], links = [], i;
       nodes.push({ title: res[0].properties.name, label:'Class',
                    id: res[0].properties.id })
@@ -120,6 +123,30 @@ function getAncestors(cls_id) {
     .catch(error => {
       session.close();
       throw error;
+    });
+}
+
+function getClassAndSibs(prop_id) {
+  var session = driver.session();
+  return session.run(
+    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class)-[:has_property]->(s:Property) WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
+    {prop_id:prop_id})
+    .then(results => {
+      session.close();
+      if (_.isEmpty(results))
+        return null
+      var nodes = [], links = []
+      var res = results.records[0];
+      nodes.push( { title: res.get('cls_name'), label:'Class',
+                    id: res.get('cls_id')} )
+      res.get('props').forEach( prop => {
+        nodes.push( { title: prop[0], label:'Property',
+                      id: prop[1] }) })
+      var i;
+      for ( i=1; i < _.size(nodes); i=i+1) {
+        links.push({source:0, target:i});
+      }
+      return {nodes, links};
     });
 }
 
@@ -162,3 +189,4 @@ exports.searchEnts = searchEnts;
 exports.getEntity = getEntity;
 exports.getProperties = getProperties;
 exports.getAncestors = getAncestors;
+exports.getClassAndSibs = getClassAndSibs;
