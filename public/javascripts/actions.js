@@ -27,37 +27,41 @@ function entSearch(e) {
   api
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {
+      if (_.isEmpty(entities))
+          return null
       var t = $("table#results tbody").empty();
-      if (entities) {
-        entities.forEach(ent => {
-	  if (ent == null) { console.log("ent is null") }
-          else {
-            var r = $("<tr>"+
-                      "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
-                      ent.name + "</td><td>" +
-	              ent.ent + "</td>" +
-                      "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
-	              (ent.owning_class ? ent.owning_class : "N/A") + "</td><td>" +
-	              ent.doc + "</td><td>" +
-	              ent.score + "</td></tr>").appendTo(t)
-            r.find("td.entity").click(function () {
-              showEnt($(this).attr('data-entity-id'))
-              // showNeighbors($(this).attr('data-entity-id') )
-              switch ($(this).attr('data-entity-type')) {
-              case 'Class':
-                showAncestors($(this).attr('data-entity-id') )
-                break
-              case 'Property':
-                showClassAndSibs($(this).attr('data-entity-id') )
-                break
-              default:
-                console.error("Unhandled entity type")
-              }
-            })
+      entities.forEach(ent => {
+	if (ent == null) { console.log("ent is null") }
+        else {
+          var r = $("<tr>"+
+                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
+                    ent.name + "<button class='dismiss-row'>X</button></td><td>" +
+	            ent.ent + "</td>" +
+                    "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
+	            (ent.owning_class ? ent.owning_class : "N/A") + "</td><td>" +
+	            ent.doc + "</td><td>" +
+	            ent.score + "</td></tr>").appendTo(t)
+          r.find("button.dismiss-row").click(
+            function (e) {
+              e.stopPropagation();
+              e.target.closest("tr").remove(); } )
+          r.find("td.entity").click(function () {
+            showEnt($(this).attr('data-entity-id'))
+            // showNeighbors($(this).attr('data-entity-id') )
+            switch ($(this).attr('data-entity-type')) {
+            case 'Class':
+              showAncestors($(this).attr('data-entity-id') )
+              break
+            case 'Property':
+              showClassAndSibs($(this).attr('data-entity-id') )
+              break
+            default:
+              console.error("Unhandled entity type")
+            }
+          })
             
-	  }
-        });
-      }
+	}
+      });
     });
 }
 
