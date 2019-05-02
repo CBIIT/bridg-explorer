@@ -9,21 +9,21 @@ $(function () {
   //  renderGraph();
   // entSearch();
 
-  $("#ent-search").submit(e => {
+  $("#ent-search-btn").on("click",e => {
     e.preventDefault();
-    entSearch(e.target);
+    entSearch(e.target,"ent");
   });
-  $("#doc-search").submit(e => {
+  $("#doc-search-btn").on("click",e => {
     e.preventDefault();
-    entSearch(e.target);
+    entSearch(e.target,"doc");
   });
   
 });
 
-function entSearch(e) {
-  var query = $(e).find("input[name=search]").val();
-  var minscore = _.toNumber($(e).find("input[name=matchmin]").val());
-  var stmtKey = $(e).attr('id').match(/^[a-z]{3}/)[0];
+function entSearch(e, stmtKey) {
+  var query = $("#query-inp").val();
+  var minscore = _.toNumber($("#match-score-inp").val());
+  console.log(e, query, minscore, stmtKey)
   api
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {

@@ -87,7 +87,6 @@ function getProperties(cls_id) {
       result.records.forEach(
         rec => { nodes.push(new Entity(rec.toObject())) }
       )
-      console.log(nodes)
       return nodes
     })
     .catch(error => {
