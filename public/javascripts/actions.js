@@ -117,8 +117,10 @@ function showAncestors(cls_id) {
   var width = 350, height = 320;
   $("#graph_display").empty()
   api
-    .getAncestors(cls_id)
+  //    .getAncestors(cls_id)
+    .getClassContext(cls_id)
     .then(graph => {
+      console.log("here is the graph", graph)
       if (_.isEmpty(graph))
         return null
       d3api.renderSimulation("#graph_display",graph, width, height)

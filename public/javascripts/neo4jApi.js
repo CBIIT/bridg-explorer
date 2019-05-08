@@ -1,7 +1,5 @@
 //require('../../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js');
 var neo4j = require('neo4j-driver').v1;
-var Movie = require('./models/Movie');
-var MovieCast = require('./models/MovieCast');
 var Cls = require('./models/Cls');
 var Prop = require('./models/Prop');
 var Entity = require('./models/Entity');
@@ -125,6 +123,83 @@ function getAncestors(cls_id) {
     });
 }
 
+function getClassContext(prop_id) {
+  var session = driver.session();
+  return session
+    .run( // distal
+      'MATCH p = (c:Class {id: $prop_id})<-[:is_a*]-(r:Class) return \
+[x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
+      {prop_id:prop_id}
+    )
+    .then(results => {
+      var nodes = [], links = []
+      //    session.close();
+      if (_.isEmpty(results)) 
+        return null
+      results.records.forEach( res => {
+        var pth = res.get('pth');
+        var i;
+        for (i=1; i < _.size(pth); i=i+1) {
+          var tgt = _.findIndex(nodes, pth[i-1])
+          var src = _.findIndex(nodes, pth[i])
+          if (tgt == -1) {
+            nodes.push(pth[i-1])
+            tgt = _.size(nodes)-1
+          }
+          if (src == -1) {
+            nodes.push(pth[i])
+            src = _.size(nodes)-1
+          }
+          var link = {source:src, target:tgt, type:"is_a"}
+          if (_.findIndex(links,link) == -1) {
+            links.push(link)
+          }
+        }
+      })
+      console.log("hey")
+      console.log({nodes, links})
+      return {nodes, links}
+    })
+    .then(
+      nl => {
+        return session.run( // proximal
+          'MATCH p = (c:Class {id: $prop_id})-[:is_a*]->(r:Class {name:$urclass}) return \
+[x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
+          {prop_id:prop_id,urclass:"UrClass"}
+        ).then(results => {
+          session.close();
+          var nodes = [], links = []
+          if (_.isEmpty(results))
+            return {nodes, links}
+          results.records.forEach( res => {
+            var pth = res.get('pth');
+            var i;
+            for (i=1; i < _.size(pth); i=i+1) {
+              var src = _.findIndex(nodes, pth[i-1])
+              var tgt = _.findIndex(nodes, pth[i])
+              if (tgt == -1) {
+                nodes.push(pth[i-1])
+                tgt = _.size(nodes)-1
+              }
+              if (src == -1) {
+                nodes.push(pth[i])
+                src = _.size(nodes)-1
+              }
+              var link = {source:src, target:tgt, type:"is_a"}
+              if (_.findIndex(links,link) == -1) {
+                links.push(link)
+              }
+            }
+          })
+          nodes.push(nl.nodes)
+          links.push(nl.links)
+          return {nodes:nodes.flat(),links:links.flat()}
+        })
+          .catch( err => { console.log("AGGGH", err) })
+      }
+    )
+    .catch( err => { console.log("Dude, I barfed.",err) } )
+}
 function getClassAndSibs(prop_id) {
   var session = driver.session();
   return session.run(
@@ -159,7 +234,7 @@ function getNeighbors(cls_id) {
     {cls_id:cls_id})
     .then(results => {
       session.close();
-      var nodes = [], rels = [], i = 0;
+      var nodes = [], links = [], i = 0;
       results.records.forEach(res => {
         var src_node = { title: res.get('src_name'), label:'Class',
                          id: res.get('src_id') }
@@ -177,9 +252,9 @@ function getNeighbors(cls_id) {
           target = i
           i++
         }
-        rels.push({source, target, type:res.get('rtype')});
+        links.push({source, target, type:res.get('rtype')});
       });
-      return {nodes, links: rels};
+      return {nodes, links};
     });
 }
 
@@ -189,3 +264,4 @@ exports.getEntity = getEntity;
 exports.getProperties = getProperties;
 exports.getAncestors = getAncestors;
 exports.getClassAndSibs = getClassAndSibs;
+exports.getClassContext = getClassContext;
