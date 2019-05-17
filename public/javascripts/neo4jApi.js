@@ -156,8 +156,6 @@ function getClassContext(prop_id) {
           }
         }
       })
-      console.log("hey")
-      console.log({nodes, links})
       return {nodes, links}
     })
     .then(
@@ -170,30 +168,29 @@ function getClassContext(prop_id) {
           session.close();
           var nodes = [], links = []
           if (_.isEmpty(results))
-            return {nodes, links}
+            return nl
           results.records.forEach( res => {
             var pth = res.get('pth');
             var i;
+            var n = _.size(nl.nodes)-1;
             for (i=1; i < _.size(pth); i=i+1) {
-              var src = _.findIndex(nodes, pth[i-1])
-              var tgt = _.findIndex(nodes, pth[i])
+              var src = _.findIndex(nl.nodes, pth[i-1])
+              var tgt = _.findIndex(nl.nodes, pth[i])
               if (tgt == -1) {
-                nodes.push(pth[i-1])
-                tgt = _.size(nodes)-1
+                nl.nodes.push(pth[i])
+                tgt = _.size(nl.nodes)-1
               }
               if (src == -1) {
-                nodes.push(pth[i])
-                src = _.size(nodes)-1
+                nl.nodes.push(pth[i-1])
+                src = _.size(nl.nodes)-1
               }
               var link = {source:src, target:tgt, type:"is_a"}
-              if (_.findIndex(links,link) == -1) {
-                links.push(link)
+              if (_.findIndex(nl.links,link) == -1) {
+                nl.links.push(link)
               }
             }
           })
-          nodes.push(nl.nodes)
-          links.push(nl.links)
-          return {nodes:nodes.flat(),links:links.flat()}
+          return nl
         })
           .catch( err => { console.log("AGGGH", err) })
       }

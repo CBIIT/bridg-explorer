@@ -15,10 +15,22 @@ svg.graph {
     stroke-width: 1.5px;
 }
 .node.Class {
-    fill: #888;
+    fill: #484;
 }
+
+.node.ur {
+    fill: black;
+}
+
+.node.Class.hilite {
+    fill: blue;
+}
+
 .node.Property {
     fill: #BBB;
+}
+.node.Property.hilite {
+    fill: blue;
 }
 .link {
     stroke: #999;

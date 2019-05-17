@@ -1,17 +1,24 @@
 var d3 = require('d3');
 var conf = {
   node_r: 10,
-  charge: -100,
+  charge: -80,
   link_dist: 10,
-  link_strength:0.1,
-  alphaTarget: 0.2
+  link_strength:0.2,
+  alphaTarget: 0.25
 }
-function renderGraph(container, nodes, links, sim) {
+function renderGraph(container, nodes, links, sim, node_id) {
   var svg = d3.select(container)
       .append('svg')
       .attr('class', 'graph')
       .attr("width", "250%").attr("height", "250%")
       .attr('pointer-events', 'all')
+  // lay down the links
+  svg.selectAll('.link')
+    .data(links)
+    .enter()
+    .append('line')
+    .attr('class','link')
+    .attr('title',d => {return d.type})
 
   // create the groups first, and load each with the circle
   svg.selectAll('.node')
@@ -19,8 +26,8 @@ function renderGraph(container, nodes, links, sim) {
     .enter()
     .append('g')
     .attr('id',d => {return d.id})
-    .attr('class', d => {return "node "+ d.label})
     .attr('data-entity-id', d => { return d.id })
+    .attr('class', d => {return "node "+ d.label + (d.title == "UrClass" ? " ur"  : "") + (d.id == node_id ? " hilite" : " no_hilite" )})
     .append('circle')
     .attr('r', conf.node_r)
     .attr('cx', d => { return d.x })
@@ -40,16 +47,9 @@ function renderGraph(container, nodes, links, sim) {
           .text(d => {return d.title})
       })
 
-  // now do the links
-  svg.selectAll('.link')
-    .data(links)
-    .enter()
-    .append('line')
-    .attr('class','link')
-    .attr('title',d => {return d.type})
 }
 
-function renderSimulation(container,graph,width,height) {
+function renderSimulation(container,graph,width,height,node_id) {
   var sim = d3.forceSimulation()
       .force('charge', d3.forceManyBody().strength(conf.charge))
       .force('links', d3.forceLink().distance(conf.link_dist)
@@ -57,7 +57,7 @@ function renderSimulation(container,graph,width,height) {
       .force('center', d3.forceCenter(width/2,height/2))
   sim.nodes(graph.nodes)
   sim.force('links').links(graph.links)
-  renderGraph(container, graph.nodes, graph.links, sim)
+  renderGraph(container, graph.nodes, graph.links, sim, node_id)
   var node = d3.select(container).selectAll(".node")
   var link  = d3.select(container).selectAll(".link")
   node

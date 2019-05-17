@@ -10,12 +10,16 @@ $(function () {
   // entSearch();
 
   $("#ent-search-btn").on("click",e => {
-    e.preventDefault();
-    entSearch(e.target,"ent");
+    e.preventDefault()
+    entSearch(e.target,"ent")
   });
   $("#doc-search-btn").on("click",e => {
-    e.preventDefault();
-    entSearch(e.target,"doc");
+    e.preventDefault()
+    entSearch(e.target,"doc")
+  });
+  $("#node_display_head").on("click", e => {
+    e.preventDefault()
+    showAncestors($("#node_display_head").attr('data-entity-id'))
   });
   
 });
@@ -73,6 +77,7 @@ function showEnt(ent_id) {
       if (!ent) return;
       $("#node_display_head").empty()
       $("#node_display_head").append( $("<b>"+ent.name + " ("+ent.ent+")</b>") )
+      $("#node_display_head").attr('data-entity-id',ent_id) 
       $("#node_display").empty()
       $("<em>DOC</em><ul>"+"<li>"+ent.definition+"</li><li>"+ent.examples+"</li>"+
         (_.size(ent.notes) ? "<li>"+ent.notes+"</li>" : "")+"</ul>")
@@ -86,13 +91,19 @@ function showEnt(ent_id) {
               return null
             props.forEach(
               prop => {
-                $("<ul><strong>"+prop.name+"</strong><li>"+prop.definition+"</li><li>"+
+                $('<ul><strong><span class="prop_in_node_disp" data-entity-id="'+prop.id+'">'+prop.name+"</span></strong><li>"+prop.definition+"</li><li>"+
                   prop.examples+"</li>"+
                   (_.size(prop.notes) ? "<li>"+prop.notes+"</li>" : "")+"</ul>")
                   .appendTo($("#node_display"))
+                  .find("span")
+                  .click( e => {
+                    showEnt(prop.id);
+                    showClassAndSibs(prop.id);
+                  })
               })
           })
         $("</ul>").appendTo($("#node_display"))
+
       }
     },"json")
 }
@@ -106,7 +117,7 @@ function showNeighbors(cls_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
@@ -120,10 +131,9 @@ function showAncestors(cls_id) {
   //    .getAncestors(cls_id)
     .getClassContext(cls_id)
     .then(graph => {
-      console.log("here is the graph", graph)
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
@@ -139,7 +149,7 @@ function showClassAndSibs(prop_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,prop_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))

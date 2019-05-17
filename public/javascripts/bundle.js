@@ -68421,12 +68421,16 @@ $(function () {
   // entSearch();
 
   $("#ent-search-btn").on("click",e => {
-    e.preventDefault();
-    entSearch(e.target,"ent");
+    e.preventDefault()
+    entSearch(e.target,"ent")
   });
   $("#doc-search-btn").on("click",e => {
-    e.preventDefault();
-    entSearch(e.target,"doc");
+    e.preventDefault()
+    entSearch(e.target,"doc")
+  });
+  $("#node_display_head").on("click", e => {
+    e.preventDefault()
+    showAncestors($("#node_display_head").attr('data-entity-id'))
   });
   
 });
@@ -68484,6 +68488,7 @@ function showEnt(ent_id) {
       if (!ent) return;
       $("#node_display_head").empty()
       $("#node_display_head").append( $("<b>"+ent.name + " ("+ent.ent+")</b>") )
+      $("#node_display_head").attr('data-entity-id',ent_id) 
       $("#node_display").empty()
       $("<em>DOC</em><ul>"+"<li>"+ent.definition+"</li><li>"+ent.examples+"</li>"+
         (_.size(ent.notes) ? "<li>"+ent.notes+"</li>" : "")+"</ul>")
@@ -68497,13 +68502,19 @@ function showEnt(ent_id) {
               return null
             props.forEach(
               prop => {
-                $("<ul><strong>"+prop.name+"</strong><li>"+prop.definition+"</li><li>"+
+                $('<ul><strong><span class="prop_in_node_disp" data-entity-id="'+prop.id+'">'+prop.name+"</span></strong><li>"+prop.definition+"</li><li>"+
                   prop.examples+"</li>"+
                   (_.size(prop.notes) ? "<li>"+prop.notes+"</li>" : "")+"</ul>")
                   .appendTo($("#node_display"))
+                  .find("span")
+                  .click( e => {
+                    showEnt(prop.id);
+                    showClassAndSibs(prop.id);
+                  })
               })
           })
         $("</ul>").appendTo($("#node_display"))
+
       }
     },"json")
 }
@@ -68517,7 +68528,7 @@ function showNeighbors(cls_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
@@ -68531,10 +68542,9 @@ function showAncestors(cls_id) {
   //    .getAncestors(cls_id)
     .getClassContext(cls_id)
     .then(graph => {
-      console.log("here is the graph", graph)
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
@@ -68550,7 +68560,7 @@ function showClassAndSibs(prop_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height)
+      d3api.renderSimulation("#graph_display",graph, width, height,prop_id)
       d3.select("#graph_display")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
@@ -68564,17 +68574,24 @@ function showClassAndSibs(prop_id) {
 var d3 = require('d3');
 var conf = {
   node_r: 10,
-  charge: -100,
+  charge: -80,
   link_dist: 10,
-  link_strength:0.1,
-  alphaTarget: 0.2
+  link_strength:0.2,
+  alphaTarget: 0.25
 }
-function renderGraph(container, nodes, links, sim) {
+function renderGraph(container, nodes, links, sim, node_id) {
   var svg = d3.select(container)
       .append('svg')
       .attr('class', 'graph')
       .attr("width", "250%").attr("height", "250%")
       .attr('pointer-events', 'all')
+  // lay down the links
+  svg.selectAll('.link')
+    .data(links)
+    .enter()
+    .append('line')
+    .attr('class','link')
+    .attr('title',d => {return d.type})
 
   // create the groups first, and load each with the circle
   svg.selectAll('.node')
@@ -68582,8 +68599,8 @@ function renderGraph(container, nodes, links, sim) {
     .enter()
     .append('g')
     .attr('id',d => {return d.id})
-    .attr('class', d => {return "node "+ d.label})
     .attr('data-entity-id', d => { return d.id })
+    .attr('class', d => {return "node "+ d.label + (d.title == "UrClass" ? " ur"  : "") + (d.id == node_id ? " hilite" : " no_hilite" )})
     .append('circle')
     .attr('r', conf.node_r)
     .attr('cx', d => { return d.x })
@@ -68603,16 +68620,9 @@ function renderGraph(container, nodes, links, sim) {
           .text(d => {return d.title})
       })
 
-  // now do the links
-  svg.selectAll('.link')
-    .data(links)
-    .enter()
-    .append('line')
-    .attr('class','link')
-    .attr('title',d => {return d.type})
 }
 
-function renderSimulation(container,graph,width,height) {
+function renderSimulation(container,graph,width,height,node_id) {
   var sim = d3.forceSimulation()
       .force('charge', d3.forceManyBody().strength(conf.charge))
       .force('links', d3.forceLink().distance(conf.link_dist)
@@ -68620,7 +68630,7 @@ function renderSimulation(container,graph,width,height) {
       .force('center', d3.forceCenter(width/2,height/2))
   sim.nodes(graph.nodes)
   sim.force('links').links(graph.links)
-  renderGraph(container, graph.nodes, graph.links, sim)
+  renderGraph(container, graph.nodes, graph.links, sim, node_id)
   var node = d3.select(container).selectAll(".node")
   var link  = d3.select(container).selectAll(".link")
   node
@@ -68878,8 +68888,6 @@ function getClassContext(prop_id) {
           }
         }
       })
-      console.log("hey")
-      console.log({nodes, links})
       return {nodes, links}
     })
     .then(
@@ -68892,30 +68900,29 @@ function getClassContext(prop_id) {
           session.close();
           var nodes = [], links = []
           if (_.isEmpty(results))
-            return {nodes, links}
+            return nl
           results.records.forEach( res => {
             var pth = res.get('pth');
             var i;
+            var n = _.size(nl.nodes)-1;
             for (i=1; i < _.size(pth); i=i+1) {
-              var src = _.findIndex(nodes, pth[i-1])
-              var tgt = _.findIndex(nodes, pth[i])
+              var src = _.findIndex(nl.nodes, pth[i-1])
+              var tgt = _.findIndex(nl.nodes, pth[i])
               if (tgt == -1) {
-                nodes.push(pth[i-1])
-                tgt = _.size(nodes)-1
+                nl.nodes.push(pth[i])
+                tgt = _.size(nl.nodes)-1
               }
               if (src == -1) {
-                nodes.push(pth[i])
-                src = _.size(nodes)-1
+                nl.nodes.push(pth[i-1])
+                src = _.size(nl.nodes)-1
               }
               var link = {source:src, target:tgt, type:"is_a"}
-              if (_.findIndex(links,link) == -1) {
-                links.push(link)
+              if (_.findIndex(nl.links,link) == -1) {
+                nl.links.push(link)
               }
             }
           })
-          nodes.push(nl.nodes)
-          links.push(nl.links)
-          return {nodes:nodes.flat(),links:links.flat()}
+          return nl
         })
           .catch( err => { console.log("AGGGH", err) })
       }
