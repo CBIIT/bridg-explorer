@@ -6,9 +6,6 @@ var d3api = require('./d3api');
 
 // init the page:
 $(function () {
-  //  renderGraph();
-  // entSearch();
-
   $("#ent-search-btn").on("click",e => {
     e.preventDefault()
     entSearch(e.target,"ent")
@@ -19,7 +16,8 @@ $(function () {
   });
   $("#node_display_head").on("click", e => {
     e.preventDefault()
-    showAncestors($("#node_display_head").attr('data-entity-id'))
+    showAncestors($("#node_display_head").attr('data-entity-id')) ||
+      showClassAndSibs($("#node_display_head").attr('data-entity-id'))
   });
   
 });
@@ -31,20 +29,36 @@ function entSearch(e, stmtKey) {
   api
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {
-      if (_.isEmpty(entities))
-          return null
+      if (_.isEmpty(entities)) {
+        $("table#results tbody").empty();
+        return null
+      }
       var t = $("table#results tbody").empty();
       entities.forEach(ent => {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
-                    ent.name + "<button class='dismiss-row'>X</button></td><td>" +
-	            ent.ent + "</td>" +
+                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+ent.name+
+                    "<button class='dismiss-row'>X</button>"+
+                    ( ent.ent == 'Class' ?
+                      "<button class='src-assoc'>Src Assoc</button>"+
+                      "<button class='dst-assoc'>Dst Assoc</button></td>" :
+                      "" ) +
+                    "<td>"+ent.ent+"</td>"+
                     "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
-	            (ent.owning_class ? ent.owning_class : "N/A") + "</td><td>" +
-	            ent.doc + "</td><td>" +
-	            ent.score + "</td></tr>").appendTo(t)
+	            (ent.owning_class ? ent.owning_class : "N/A")+"</td>"+
+                    "<td>"+ent.doc+"</td>"+
+                    "<td>"+ent.score+"</td>"+
+                    "</tr>").appendTo(t)
+          r.find("button.src-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              console.log(e.target.closest("td"))
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
+          r.find("button.dst-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0); } )
           r.find("button.dismiss-row").click(
             function (e) {
               e.stopPropagation();
@@ -106,8 +120,51 @@ function showEnt(ent_id) {
 
       }
     },"json")
+    .catch( err => { console.log("Barfed in showEnt", err) })
 }
 
+function showAssoc(cls_id, outgoing) {
+  api
+    .getAssocs(cls_id,outgoing)
+    .then( assocs => {
+      if (_.isEmpty(assocs)) {
+        return null
+      }
+      var t = $("table#assocs")
+      assocs.forEach( assoc => {
+        if (assoc == null) console.log("assoc is null")
+        else {
+          var r = $("<tr>"+
+                    "<td class='entity source' data-entity-id='"+assoc.src.id+"' data-entity-type='Class'>"+assoc.src.title+"<button class='dismiss-row'>X</button>"+"</td>"+
+                    "<td class='entity source role'>"+assoc.src.role+"</td>"+
+                    "<td class='assoc'>"+assoc.rtype+"</td>"+
+                    "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
+                    "<td class='entity dest' data-entity-id='"+assoc.dst.id+"' data-entity-type='Class'>"+assoc.dst.title+"</td>"+
+                    "</tr>").appendTo(t)
+          r.find("button.dismiss-row").click(
+            e => {
+              e.stopPropagation();
+              e.target.closest("tr").remove(); } )
+          r.find("td.entity").click(
+            function () {
+              showEnt($(this).attr('data-entity-id'))
+              // showNeighbors($(this).attr('data-entity-id') )
+              switch ($(this).attr('data-entity-type')) {
+              case 'Class':
+                showAncestors($(this).attr('data-entity-id') )
+                break
+              case 'Property':
+                showClassAndSibs($(this).attr('data-entity-id') )
+                break
+              default:
+                console.error("Unhandled entity type")
+              }
+            })
+        }
+      })
+    })
+    .catch( err => { console.log("Barfed in showAssoc", err) })
+}
 
 function showNeighbors(cls_id) {
   var width = 350, height = 320;

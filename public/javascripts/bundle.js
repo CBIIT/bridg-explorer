@@ -68417,9 +68417,6 @@ var d3api = require('./d3api');
 
 // init the page:
 $(function () {
-  //  renderGraph();
-  // entSearch();
-
   $("#ent-search-btn").on("click",e => {
     e.preventDefault()
     entSearch(e.target,"ent")
@@ -68430,7 +68427,8 @@ $(function () {
   });
   $("#node_display_head").on("click", e => {
     e.preventDefault()
-    showAncestors($("#node_display_head").attr('data-entity-id'))
+    showAncestors($("#node_display_head").attr('data-entity-id')) ||
+      showClassAndSibs($("#node_display_head").attr('data-entity-id'))
   });
   
 });
@@ -68442,20 +68440,36 @@ function entSearch(e, stmtKey) {
   api
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {
-      if (_.isEmpty(entities))
-          return null
+      if (_.isEmpty(entities)) {
+        $("table#results tbody").empty();
+        return null
+      }
       var t = $("table#results tbody").empty();
       entities.forEach(ent => {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
-                    ent.name + "<button class='dismiss-row'>X</button></td><td>" +
-	            ent.ent + "</td>" +
+                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+ent.name+
+                    "<button class='dismiss-row'>X</button>"+
+                    ( ent.ent == 'Class' ?
+                      "<button class='src-assoc'>Src Assoc</button>"+
+                      "<button class='dst-assoc'>Dst Assoc</button></td>" :
+                      "" ) +
+                    "<td>"+ent.ent+"</td>"+
                     "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
-	            (ent.owning_class ? ent.owning_class : "N/A") + "</td><td>" +
-	            ent.doc + "</td><td>" +
-	            ent.score + "</td></tr>").appendTo(t)
+	            (ent.owning_class ? ent.owning_class : "N/A")+"</td>"+
+                    "<td>"+ent.doc+"</td>"+
+                    "<td>"+ent.score+"</td>"+
+                    "</tr>").appendTo(t)
+          r.find("button.src-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              console.log(e.target.closest("td"))
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
+          r.find("button.dst-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0); } )
           r.find("button.dismiss-row").click(
             function (e) {
               e.stopPropagation();
@@ -68517,8 +68531,51 @@ function showEnt(ent_id) {
 
       }
     },"json")
+    .catch( err => { console.log("Barfed in showEnt", err) })
 }
 
+function showAssoc(cls_id, outgoing) {
+  api
+    .getAssocs(cls_id,outgoing)
+    .then( assocs => {
+      if (_.isEmpty(assocs)) {
+        return null
+      }
+      var t = $("table#assocs")
+      assocs.forEach( assoc => {
+        if (assoc == null) console.log("assoc is null")
+        else {
+          var r = $("<tr>"+
+                    "<td class='entity source' data-entity-id='"+assoc.src.id+"' data-entity-type='Class'>"+assoc.src.title+"<button class='dismiss-row'>X</button>"+"</td>"+
+                    "<td class='entity source role'>"+assoc.src.role+"</td>"+
+                    "<td class='assoc'>"+assoc.rtype+"</td>"+
+                    "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
+                    "<td class='entity dest' data-entity-id='"+assoc.dst.id+"' data-entity-type='Class'>"+assoc.dst.title+"</td>"+
+                    "</tr>").appendTo(t)
+          r.find("button.dismiss-row").click(
+            e => {
+              e.stopPropagation();
+              e.target.closest("tr").remove(); } )
+          r.find("td.entity").click(
+            function () {
+              showEnt($(this).attr('data-entity-id'))
+              // showNeighbors($(this).attr('data-entity-id') )
+              switch ($(this).attr('data-entity-type')) {
+              case 'Class':
+                showAncestors($(this).attr('data-entity-id') )
+                break
+              case 'Property':
+                showClassAndSibs($(this).attr('data-entity-id') )
+                break
+              default:
+                console.error("Unhandled entity type")
+              }
+            })
+        }
+      })
+    })
+    .catch( err => { console.log("Barfed in showAssoc", err) })
+}
 
 function showNeighbors(cls_id) {
   var width = 350, height = 320;
@@ -68574,10 +68631,11 @@ function showClassAndSibs(prop_id) {
 var d3 = require('d3');
 var conf = {
   node_r: 10,
-  charge: -80,
-  link_dist: 10,
+  node_bnd: 25,
+  charge: 20,
+  link_dist: 30,
   link_strength:0.2,
-  alphaTarget: 0.25
+  alphaTarget: 0.1
 }
 function renderGraph(container, nodes, links, sim, node_id) {
   var svg = d3.select(container)
@@ -68615,8 +68673,8 @@ function renderGraph(container, nodes, links, sim, node_id) {
         update
           .append('text')
           .attr("class", "node_lbl")
-          .attr("x",d => {return d.x})
-          .attr("y",d => {return d.y})
+          .attr("x",d => {return d.x-(conf.node_r/2)})
+          .attr("y",d => {return d.y+(conf.node_r/2)})
           .text(d => {return d.title})
       })
 
@@ -68624,10 +68682,12 @@ function renderGraph(container, nodes, links, sim, node_id) {
 
 function renderSimulation(container,graph,width,height,node_id) {
   var sim = d3.forceSimulation()
-      .force('charge', d3.forceManyBody().strength(conf.charge))
+      .force('charge', d3.forceManyBody().strength(conf.charge)
+             .distanceMax(2*conf.node_bnd))
       .force('links', d3.forceLink().distance(conf.link_dist)
              .strength(conf.link_strength))
       .force('center', d3.forceCenter(width/2,height/2))
+      .force('collision', d3.forceCollide(conf.node_bnd))
   sim.nodes(graph.nodes)
   sim.force('links').links(graph.links)
   renderGraph(container, graph.nodes, graph.links, sim, node_id)
@@ -68927,12 +68987,12 @@ function getClassContext(prop_id) {
           .catch( err => { console.log("AGGGH", err) })
       }
     )
-    .catch( err => { console.log("Dude, I barfed.",err) } )
+    .catch( err => { console.log("Barfed in getClassContext: ",err) } )
 }
 function getClassAndSibs(prop_id) {
   var session = driver.session();
   return session.run(
-    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class)-[:has_property]->(s:Property) WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
+    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class) OPTIONAL MATCH (c)-[:has_property]->(s:Property) WHERE s.id <> $prop_id WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
     {prop_id:prop_id})
     .then(results => {
       session.close();
@@ -68940,6 +69000,8 @@ function getClassAndSibs(prop_id) {
         return null
       var nodes = [], links = []
       var res = results.records[0];
+      if (_.isEmpty(res))
+        return null
       nodes.push( { title: res.get('cls_name'), label:'Class',
                     id: res.get('cls_id')} )
       res.get('props').forEach( prop => {
@@ -68950,7 +69012,9 @@ function getClassAndSibs(prop_id) {
         links.push({source:0, target:i});
       }
       return {nodes, links};
-    });
+    })
+    .catch( err => { console.log("Barfed in getClassAndSibs: ",err) })
+  ;
 }
 
 function getNeighbors(cls_id) {
@@ -68984,9 +69048,44 @@ function getNeighbors(cls_id) {
         links.push({source, target, type:res.get('rtype')});
       });
       return {nodes, links};
-    });
+    })
+    .catch( err => { console.log("Barfed in get Neighbors: ",err) });
 }
 
+function getAssocs(cls_id, outgoing) {
+  var session = driver.session();
+  var cypher_q = {
+    outg: 'MATCH (c:Class {id:$cls_id})-[r]->(d:Class) \
+           WHERE exists(r.src_role) \
+           RETURN c.name as src_name, c.id as src_id, type(r) as rtype, \
+            r.src_role as src_role, r.dst_role as dst_role, \
+            d.name as dst_name, d.id as dst_id',
+    incm: 'MATCH (c:Class {id:$cls_id})<-[r]-(d:Class) \
+           WHERE exists(r.src_role) \
+           RETURN c.name as dst_name, c.id as dst_id, type(r) as rtype, \
+            r.src_role as src_role, r.dst_role as dst_role, \
+            d.name as src_name, d.id as src_id'
+  }
+  return session.run(
+    outgoing ? cypher_q.outg : cypher_q.incm, {cls_id:cls_id})
+    .then( results => {
+      session.close();
+      if (_.isEmpty(results))
+        return null
+      var assocs = []
+      results.records.forEach( res => {
+        assocs.push( {
+          src : { title: res.get('src_name'), id: res.get('src_id'), label:'Class', role: res.get('src_role')},
+          dst : { title: res.get('dst_name'), id: res.get('dst_id'), label:'Class', role: res.get('dst_role')},
+          rtype : res.get('rtype')
+        })
+      })
+      return assocs;
+    })
+    .catch( err => { console.log("Barfed in getAssocs: ",err) });
+}
+
+exports.getAssocs = getAssocs;
 exports.getNeighbors = getNeighbors;
 exports.searchEnts = searchEnts;
 exports.getEntity = getEntity;

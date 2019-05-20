@@ -1,10 +1,11 @@
 var d3 = require('d3');
 var conf = {
   node_r: 10,
-  charge: -80,
-  link_dist: 10,
+  node_bnd: 25,
+  charge: 20,
+  link_dist: 30,
   link_strength:0.2,
-  alphaTarget: 0.25
+  alphaTarget: 0.1
 }
 function renderGraph(container, nodes, links, sim, node_id) {
   var svg = d3.select(container)
@@ -42,8 +43,8 @@ function renderGraph(container, nodes, links, sim, node_id) {
         update
           .append('text')
           .attr("class", "node_lbl")
-          .attr("x",d => {return d.x})
-          .attr("y",d => {return d.y})
+          .attr("x",d => {return d.x-(conf.node_r/2)})
+          .attr("y",d => {return d.y+(conf.node_r/2)})
           .text(d => {return d.title})
       })
 
@@ -51,10 +52,12 @@ function renderGraph(container, nodes, links, sim, node_id) {
 
 function renderSimulation(container,graph,width,height,node_id) {
   var sim = d3.forceSimulation()
-      .force('charge', d3.forceManyBody().strength(conf.charge))
+      .force('charge', d3.forceManyBody().strength(conf.charge)
+             .distanceMax(2*conf.node_bnd))
       .force('links', d3.forceLink().distance(conf.link_dist)
              .strength(conf.link_strength))
       .force('center', d3.forceCenter(width/2,height/2))
+      .force('collision', d3.forceCollide(conf.node_bnd))
   sim.nodes(graph.nodes)
   sim.force('links').links(graph.links)
   renderGraph(container, graph.nodes, graph.links, sim, node_id)

@@ -195,12 +195,12 @@ function getClassContext(prop_id) {
           .catch( err => { console.log("AGGGH", err) })
       }
     )
-    .catch( err => { console.log("Dude, I barfed.",err) } )
+    .catch( err => { console.log("Barfed in getClassContext: ",err) } )
 }
 function getClassAndSibs(prop_id) {
   var session = driver.session();
   return session.run(
-    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class)-[:has_property]->(s:Property) WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
+    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class) OPTIONAL MATCH (c)-[:has_property]->(s:Property) WHERE s.id <> $prop_id WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
     {prop_id:prop_id})
     .then(results => {
       session.close();
@@ -208,6 +208,8 @@ function getClassAndSibs(prop_id) {
         return null
       var nodes = [], links = []
       var res = results.records[0];
+      if (_.isEmpty(res))
+        return null
       nodes.push( { title: res.get('cls_name'), label:'Class',
                     id: res.get('cls_id')} )
       res.get('props').forEach( prop => {
@@ -218,7 +220,9 @@ function getClassAndSibs(prop_id) {
         links.push({source:0, target:i});
       }
       return {nodes, links};
-    });
+    })
+    .catch( err => { console.log("Barfed in getClassAndSibs: ",err) })
+  ;
 }
 
 function getNeighbors(cls_id) {
@@ -252,9 +256,44 @@ function getNeighbors(cls_id) {
         links.push({source, target, type:res.get('rtype')});
       });
       return {nodes, links};
-    });
+    })
+    .catch( err => { console.log("Barfed in get Neighbors: ",err) });
 }
 
+function getAssocs(cls_id, outgoing) {
+  var session = driver.session();
+  var cypher_q = {
+    outg: 'MATCH (c:Class {id:$cls_id})-[r]->(d:Class) \
+           WHERE exists(r.src_role) \
+           RETURN c.name as src_name, c.id as src_id, type(r) as rtype, \
+            r.src_role as src_role, r.dst_role as dst_role, \
+            d.name as dst_name, d.id as dst_id',
+    incm: 'MATCH (c:Class {id:$cls_id})<-[r]-(d:Class) \
+           WHERE exists(r.src_role) \
+           RETURN c.name as dst_name, c.id as dst_id, type(r) as rtype, \
+            r.src_role as src_role, r.dst_role as dst_role, \
+            d.name as src_name, d.id as src_id'
+  }
+  return session.run(
+    outgoing ? cypher_q.outg : cypher_q.incm, {cls_id:cls_id})
+    .then( results => {
+      session.close();
+      if (_.isEmpty(results))
+        return null
+      var assocs = []
+      results.records.forEach( res => {
+        assocs.push( {
+          src : { title: res.get('src_name'), id: res.get('src_id'), label:'Class', role: res.get('src_role')},
+          dst : { title: res.get('dst_name'), id: res.get('dst_id'), label:'Class', role: res.get('dst_role')},
+          rtype : res.get('rtype')
+        })
+      })
+      return assocs;
+    })
+    .catch( err => { console.log("Barfed in getAssocs: ",err) });
+}
+
+exports.getAssocs = getAssocs;
 exports.getNeighbors = getNeighbors;
 exports.searchEnts = searchEnts;
 exports.getEntity = getEntity;
