@@ -279,7 +279,7 @@ function getAssocs(cls_id, outgoing) {
     .then( results => {
       session.close();
       if (_.isEmpty(results))
-        return null
+        return []
       var assocs = []
       results.records.forEach( res => {
         assocs.push( {

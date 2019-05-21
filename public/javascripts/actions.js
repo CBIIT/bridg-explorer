@@ -46,17 +46,12 @@ function entSearch(e, stmtKey) {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
-                    "<input type='checkbox' name='keep-me'/>"+
-                    ent.name+
-                    "<button class='dismiss-row'>X</button>"+
-                    ( ent.ent == 'Class' ?
-                      "<button class='src-assoc'>Src Assoc</button>"+
-                      "<button class='dst-assoc'>Dst Assoc</button></td>" :
-                      "" ) +
+                    tdClass(ent)+
                     "<td>"+ent.ent+"</td>"+
-                    "<td class='entity' data-entity-id='"+ent.owning_class_id+"' data-entity-type='Class'>"+
-	            (ent.owning_class ? ent.owning_class : "N/A")+"</td>"+
+                    (ent.owning_class ?
+                      tdClass({title:ent.owning_class, id:ent.owning_class_id,
+                               label: "Class"}) :
+                      "N/A")+
                     "<td>"+ent.doc+"</td>"+
                     "<td>"+ent.score+"</td>"+
                     "</tr>").appendTo(t)
@@ -148,20 +143,11 @@ function showAssoc(cls_id, outgoing) {
         if (assoc == null) console.log("assoc is null")
         else {
           var r = $("<tr>"+
-                    "<td class='entity source' data-entity-id='"+assoc.src.id+"' data-entity-type='Class'>"+
-                    "<input type='checkbox' name='keep-me'/>"+
-                    +assoc.src.title+
-                    "<button class='dismiss-row'>X</button>"+
-                    "<button class='src-assoc'>Src Assoc</button>"+
-                    "<button class='dst-assoc'>Dst Assoc</button>"+
-                    "</td>"+
+                    tdClass(assoc.src) +
                     "<td class='entity source role'>"+assoc.src.role+"</td>"+
                     "<td class='assoc'>"+assoc.rtype+"</td>"+
                     "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
-                    "<td class='entity dest' data-entity-id='"+assoc.dst.id+"' data-entity-type='Class'>"+assoc.dst.title+
-                    "<button class='src-assoc'>Src Assoc</button>"+
-                    "<button class='dst-assoc'>Dst Assoc</button>"+
-                    "</td>"+
+                    tdClass(assoc.dst) +
                     "</tr>").appendTo(t)
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
@@ -254,3 +240,13 @@ function clearTable(table) {
     .remove()
 }
 
+function tdClass(ent) {
+  return "<td class='entity source' data-entity-id='"+ent.id+"' data-entity-type='Class'>"+
+    "<input type='checkbox' name='keep-me'/>"+
+    (ent.title||ent.name)+
+    "<p><button class='dismiss-row'>X</button>"+
+    ( ent.label == 'Class' || ent.ent == 'Class' ?
+      "<button class='src-assoc'>as Src</button>"+
+      "<button class='dst-assoc'>as Dst</button>" : "")+
+    "</td>"
+}
