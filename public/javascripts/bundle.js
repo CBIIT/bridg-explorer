@@ -68420,16 +68420,24 @@ $(function () {
   $("#ent-search-btn").on("click",e => {
     e.preventDefault()
     entSearch(e.target,"ent")
-  });
+  })
   $("#doc-search-btn").on("click",e => {
     e.preventDefault()
     entSearch(e.target,"doc")
-  });
+  })
   $("#node_display_head").on("click", e => {
     e.preventDefault()
     showAncestors($("#node_display_head").attr('data-entity-id')) ||
       showClassAndSibs($("#node_display_head").attr('data-entity-id'))
-  });
+  })
+  $("#result-clean-up").click( e => {
+    e.preventDefault()
+    clearTable("table#results")
+  })
+  $("#assoc-clean-up").click( e => {
+    e.preventDefault()
+    clearTable("table#assocs")
+  })
   
 });
 
@@ -68449,7 +68457,9 @@ function entSearch(e, stmtKey) {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+ent.name+
+                    "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+ent.ent+"'>"+
+                    "<input type='checkbox' name='keep-me'/>"+
+                    ent.name+
                     "<button class='dismiss-row'>X</button>"+
                     ( ent.ent == 'Class' ?
                       "<button class='src-assoc'>Src Assoc</button>"+
@@ -68461,6 +68471,9 @@ function entSearch(e, stmtKey) {
                     "<td>"+ent.doc+"</td>"+
                     "<td>"+ent.score+"</td>"+
                     "</tr>").appendTo(t)
+          r.find("[type=checkbox]").click(
+            e => { e.stopPropagation() }
+          )
           r.find("button.src-assoc").click(
             function (e) {
               e.stopPropagation();
@@ -68546,12 +68559,33 @@ function showAssoc(cls_id, outgoing) {
         if (assoc == null) console.log("assoc is null")
         else {
           var r = $("<tr>"+
-                    "<td class='entity source' data-entity-id='"+assoc.src.id+"' data-entity-type='Class'>"+assoc.src.title+"<button class='dismiss-row'>X</button>"+"</td>"+
+                    "<td class='entity source' data-entity-id='"+assoc.src.id+"' data-entity-type='Class'>"+
+                    "<input type='checkbox' name='keep-me'/>"+
+                    +assoc.src.title+
+                    "<button class='dismiss-row'>X</button>"+
+                    "<button class='src-assoc'>Src Assoc</button>"+
+                    "<button class='dst-assoc'>Dst Assoc</button>"+
+                    "</td>"+
                     "<td class='entity source role'>"+assoc.src.role+"</td>"+
                     "<td class='assoc'>"+assoc.rtype+"</td>"+
                     "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
-                    "<td class='entity dest' data-entity-id='"+assoc.dst.id+"' data-entity-type='Class'>"+assoc.dst.title+"</td>"+
+                    "<td class='entity dest' data-entity-id='"+assoc.dst.id+"' data-entity-type='Class'>"+assoc.dst.title+
+                    "<button class='src-assoc'>Src Assoc</button>"+
+                    "<button class='dst-assoc'>Dst Assoc</button>"+
+                    "</td>"+
                     "</tr>").appendTo(t)
+          r.find("[type=checkbox]").click(
+            e => { e.stopPropagation() }
+          )
+          r.find("button.src-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              console.log(e.target.closest("td"))
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
+          r.find("button.dst-assoc").click(
+            function (e) {
+              e.stopPropagation();
+              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0); } )
           r.find("button.dismiss-row").click(
             e => {
               e.stopPropagation();
@@ -68625,6 +68659,11 @@ function showClassAndSibs(prop_id) {
     })
 }
 
+function clearTable(table) {
+  $(table+" tbody > tr > td > input[type=checkbox]:not(:checked)")
+    .closest("tr")
+    .remove()
+}
 
 
 },{"./d3api":268,"./neo4jApi":272,"d3":198,"jquery":199,"lodash":200}],268:[function(require,module,exports){
