@@ -38,20 +38,21 @@ function entSearch(e, stmtKey) {
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {
       if (_.isEmpty(entities)) {
-        $("table#results tbody").empty();
+        clearTable("table#results")
         return null
       }
-      var t = $("table#results tbody").empty();
+      clearTable("table#results")
+      var t = $("table#results tbody")
       entities.forEach(ent => {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    tdClass(ent)+
+                    tdClass(ent,1)+
                     "<td>"+ent.ent+"</td>"+
                     (ent.owning_class ?
                       tdClass({title:ent.owning_class, id:ent.owning_class_id,
-                               label: "Class"}) :
-                      "N/A")+
+                               label: "Class"},0) :
+                     "<td>N/A</td>")+
                     "<td>"+ent.doc+"</td>"+
                     "<td>"+ent.score+"</td>"+
                     "</tr>").appendTo(t)
@@ -143,11 +144,11 @@ function showAssoc(cls_id, outgoing) {
         if (assoc == null) console.log("assoc is null")
         else {
           var r = $("<tr>"+
-                    tdClass(assoc.src) +
+                    tdClass(assoc.src,1) +
                     "<td class='entity source role'>"+assoc.src.role+"</td>"+
                     "<td class='assoc'>"+assoc.rtype+"</td>"+
                     "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
-                    tdClass(assoc.dst) +
+                    tdClass(assoc.dst,0) +
                     "</tr>").appendTo(t)
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
@@ -240,9 +241,9 @@ function clearTable(table) {
     .remove()
 }
 
-function tdClass(ent) {
+function tdClass(ent,chk) {
   return "<td class='entity source' data-entity-id='"+ent.id+"' data-entity-type='Class'>"+
-    "<input type='checkbox' name='keep-me'/>"+
+    (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "")+
     (ent.title||ent.name)+
     "<p><button class='dismiss-row'>X</button>"+
     ( ent.label == 'Class' || ent.ent == 'Class' ?

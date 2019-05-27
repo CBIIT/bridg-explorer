@@ -1,4 +1,3 @@
-//require('../../node_modules/neo4j-driver/lib/browser/neo4j-web.min.js');
 var neo4j = require('neo4j-driver').v1;
 var Cls = require('./models/Cls');
 var Prop = require('./models/Prop');

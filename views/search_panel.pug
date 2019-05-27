@@ -1,10 +1,8 @@
-
-ul(class='nav navbar-nav')
-  li
-    form#search(role='search' class='navbar-form')
-      div(class='form-group')
-        input#query-inp(type='txt' value='' placeholder='search term or Lucene query' class='form-control' name='search')
-        input#match-score-inp(type='txt' value='' class='form-control' name='matchmin' placeholder='minimum match score')
-        div(class='d-flex flex-row')
-          button#ent-search-btn(class='btn btn-default') Search Names
-          button#doc-search-btn(class='btn btn-default') Search Docs        
+div(class='card border border-0', style='width:350px')
+  form#search(role='search')
+    div(class='form-group')
+      input#query-inp(class="mb-1" type='txt' value='' placeholder='search term or Lucene query' class='form-control' name='search')
+      input#match-score-inp(class="mb-2" type='txt' value='' class='form-control' name='matchmin' placeholder='minimum match score')
+      div(class='d-flex flex-row')
+        button#ent-search-btn(type='button' class='mr-2 btn btn-outline-primary') Search Names
+        button#doc-search-btn(type='button' class='mr-2 btn btn-outline-primary') Search Docs        

@@ -1,20 +1,20 @@
 extends layout
 
 block content
-  div(role='navigation' class='navbar navbar-default navbar-static-top')
-    div(class='container')
-      div(class='row')
-        div(class='col-sm-4 col-md-4')
-          include ./search_panel.pug
-        div(class='navbar-header col-sm-4 col-md-4')
-          include ./node_display.pug
-          //- div(class='logo-well')
-          //- a(href="https://bridgmodel.nci.nih.gov/sites/nci-bridg/files/images/logo/nci-bridg.svg")
-          //-   img#logo(src="https://bridgmodel.nci.nih.gov/sites/nci-bridg/files/images/logo/nci-bridg.svg" alt="Biomedical Research Integrated Domain Group")
-          //- div(class='navbar-brand')
-          //-   div(class='brand') BRIDG Tools
-        div(class='navbar-header col-sm-4 col-md-4')
-          include ./graph_display.pug
-    include ./result_table.pug
-    include ./assoc_display.pug
   script(src="javascripts/bundle.js")
+  div(class='container')
+    div(class='row mb-3')
+      div(class='col')
+        include ./search_panel.pug
+        include ./logo.pug
+      div(class='col')
+        include ./node_display.pug
+      div(class='col')
+        include ./graph_display.pug
+    div(class='row mb-3')
+      div(class='col')
+        include ./result_table.pug
+    div(class='row mb-3')
+      div(class='col')
+        include ./assoc_table.pug
+
