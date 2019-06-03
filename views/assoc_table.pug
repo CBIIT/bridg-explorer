@@ -4,12 +4,12 @@ div(class='card')
     button#assoc-clean-up(class='ml-2')
       |Clean up
   div#assoc_display(style="overflow-y: scroll; scroll-behavior:auto; height:300px")
-    table#assocs(class='table')
+    table#assocs(class='table table-striped')
       thead
         tr
-          th(class='col-md-2') Source BRIDG Class
-          th(class='col-md-2') Source Role
-          th(class='col-md-2') Association
-          th(class='col-md-2') Dest Role
-          th(class='col-md-2') Dest BRIDG Class
+          th(scope='col') Source BRIDG Class
+          th(scope='col') Source Role
+          th(scope='col') Association
+          th(scope='col') Dest Role
+          th(scope='col') Dest BRIDG Class
         tbody

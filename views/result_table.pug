@@ -4,12 +4,12 @@ div(class='card')
     button#result-clean-up(class='ml-2')
       |Clean up
   div( style="overflow-y: scroll; scroll-behavior:auto; height:300px;")
-    table#results(class='table')
+    table#results(class='table table-striped')
       thead
         tr
-          th(class='col-md-2') BRIDG Name
-          th(class='col-md-1') Entity Type
-          th(class='col-md-2') Describes...
-          th(class='col-md-6') Documentation
-          th(class='col-md-1') Match Score
+          th(scope='col') BRIDG Name
+          th(scope='col') Entity Type
+          th(scope='col') Describes...
+          th(scope='col') Documentation
+          th(scope='col') Match Score
         tbody

@@ -245,9 +245,9 @@ function tdClass(ent,chk) {
   return "<td class='entity source' data-entity-id='"+ent.id+"' data-entity-type='Class'>"+
     (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "")+
     (ent.title||ent.name)+
-    "<p><button class='dismiss-row'>X</button>"+
+    "<p><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
     ( ent.label == 'Class' || ent.ent == 'Class' ?
-      "<button class='src-assoc'>as Src</button>"+
-      "<button class='dst-assoc'>as Dst</button>" : "")+
+      "<button type='button' class='btn btn-secondary btn-small mr-1 src-assoc'>as Src</button>"+
+      "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "")+
     "</td>"
 }
