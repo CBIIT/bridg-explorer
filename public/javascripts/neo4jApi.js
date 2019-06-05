@@ -112,7 +112,7 @@ function getAncestors(cls_id) {
       for (i=1; i<_.size(res); i=i+1) {
         nodes.push({ title: res[i].properties.name, label:'Class',
                      id: res[i].properties.id })
-        links.push({source:i-1, target:i});
+        links.push({source:res[i-1].properties.id, target:res[i].properties.id});
       }
       return {nodes, links};
     })
@@ -134,62 +134,39 @@ function getClassContext(prop_id) {
       var nodes = [], links = []
       //    session.close();
       if (_.isEmpty(results)) 
-        return null
+        return nodes
       results.records.forEach( res => {
-        var pth = res.get('pth');
-        var i;
-        for (i=1; i < _.size(pth); i=i+1) {
-          var tgt = _.findIndex(nodes, pth[i-1])
-          var src = _.findIndex(nodes, pth[i])
-          if (tgt == -1) {
-            nodes.push(pth[i-1])
-            tgt = _.size(nodes)-1
-          }
-          if (src == -1) {
-            nodes.push(pth[i])
-            src = _.size(nodes)-1
-          }
-          var link = {source:src, target:tgt, type:"is_a"}
-          if (_.findIndex(links,link) == -1) {
-            links.push(link)
-          }
-        }
+        var pth = res.get('pth')
+        pth.forEach( p => {
+          nodes.push(p)
+        })
       })
-      return {nodes, links}
+      return nodes
     })
     .then(
-      nl => {
+      nodes => {
         return session.run( // proximal
           'MATCH p = (c:Class {id: $prop_id})-[:is_a*]->(r:Class {name:$urclass}) return \
 [x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
           {prop_id:prop_id,urclass:"UrClass"}
         ).then(results => {
           session.close();
-          var nodes = [], links = []
-          if (_.isEmpty(results))
-            return nl
-          results.records.forEach( res => {
-            var pth = res.get('pth');
-            var i;
-            var n = _.size(nl.nodes)-1;
-            for (i=1; i < _.size(pth); i=i+1) {
-              var src = _.findIndex(nl.nodes, pth[i-1])
-              var tgt = _.findIndex(nl.nodes, pth[i])
-              if (tgt == -1) {
-                nl.nodes.push(pth[i])
-                tgt = _.size(nl.nodes)-1
-              }
-              if (src == -1) {
-                nl.nodes.push(pth[i-1])
-                src = _.size(nl.nodes)-1
-              }
-              var link = {source:src, target:tgt, type:"is_a"}
-              if (_.findIndex(nl.links,link) == -1) {
-                nl.links.push(link)
-              }
-            }
-          })
-          return nl
+          var links = [];
+          _.reverse(nodes)
+          if (!_.isEmpty(results)) {
+            results.records.forEach( res => {
+              var pth = res.get('pth')
+              pth.forEach( p => {
+                if (!_.find(nodes, n => { n == p })) {
+                  nodes.push(p)
+                }
+              })
+            })
+          }
+          for( var i = 1; i < _.size(nodes) ; i++ ) {
+            links.push( { target: nodes[i-1].id, source: nodes[i].id, type:"is_a"} )
+          }
+          return {nodes, links}
         })
           .catch( err => { console.log("AGGGH", err) })
       }
@@ -214,14 +191,12 @@ function getClassAndSibs(prop_id) {
       res.get('props').forEach( prop => {
         nodes.push( { title: prop[0], label:'Property',
                       id: prop[1] }) })
-      var i;
-      for ( i=1; i < _.size(nodes); i=i+1) {
-        links.push({source:0, target:i});
-      }
+      nodes.forEach( n => {
+        if (n.label=='Property') links.push({source:nodes[0].id, target:n.id})
+      })
       return {nodes, links};
     })
     .catch( err => { console.log("Barfed in getClassAndSibs: ",err) })
-  ;
 }
 
 function getNeighbors(cls_id) {

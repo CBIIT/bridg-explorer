@@ -1,8 +1,18 @@
-var _ = require('lodash');
-var api = require('./neo4jApi');
-var $ = require('jquery');
-var d3 = require('d3');
-var d3api = require('./d3api');
+var _ = require('lodash')
+var api = require('./neo4jApi')
+var $ = require('jquery')
+var d3 = require('d3')
+// var d3api = require('./d3api')
+var sim = require('./sim')
+
+var sim_conf = {
+  node_r: 10,
+  node_bnd: 25,
+  charge: 20,
+  link_dist: 30,
+  link_strength:0.2,
+  alphaTarget: 0.1
+}
 
 // init the page:
 $(function () {
@@ -33,7 +43,6 @@ $(function () {
 function entSearch(e, stmtKey) {
   var query = $("#query-inp").val();
   var minscore = _.toNumber($("#match-score-inp").val());
-  console.log(e, query, minscore, stmtKey)
   api
     .searchEnts(query,minscore,stmtKey)
     .then(entities => {
@@ -47,10 +56,10 @@ function entSearch(e, stmtKey) {
 	if (ent == null) { console.log("ent is null") }
         else {
           var r = $("<tr>"+
-                    tdClass(ent,1)+
+                    tdEntity(ent,1)+
                     "<td>"+ent.ent+"</td>"+
                     (ent.owning_class ?
-                      tdClass({title:ent.owning_class, id:ent.owning_class_id,
+                      tdEntity({title:ent.owning_class, id:ent.owning_class_id,
                                label: "Class"},0) :
                      "<td>N/A</td>")+
                     "<td>"+ent.doc+"</td>"+
@@ -62,7 +71,6 @@ function entSearch(e, stmtKey) {
           r.find("button.src-assoc").click(
             function (e) {
               e.stopPropagation();
-              console.log(e.target.closest("td"))
               showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
           r.find("button.dst-assoc").click(
             function (e) {
@@ -144,11 +152,11 @@ function showAssoc(cls_id, outgoing) {
         if (assoc == null) console.log("assoc is null")
         else {
           var r = $("<tr>"+
-                    tdClass(assoc.src,1) +
-                    "<td class='entity source role'>"+assoc.src.role+"</td>"+
+                    tdEntity(assoc.src,1) +
+                    "<td class='role source'>"+assoc.src.role+"</td>"+
                     "<td class='assoc'>"+assoc.rtype+"</td>"+
-                    "<td class='entity dest role'>"+assoc.dst.role+"</td>"+
-                    tdClass(assoc.dst,0) +
+                    "<td class='role dest'>"+assoc.dst.role+"</td>"+
+                    tdEntity(assoc.dst,0) +
                     "</tr>").appendTo(t)
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
@@ -156,7 +164,6 @@ function showAssoc(cls_id, outgoing) {
           r.find("button.src-assoc").click(
             function (e) {
               e.stopPropagation();
-              console.log(e.target.closest("td"))
               showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
           r.find("button.dst-assoc").click(
             function (e) {
@@ -187,16 +194,24 @@ function showAssoc(cls_id, outgoing) {
     .catch( err => { console.log("Barfed in showAssoc", err) })
 }
 
+function _annotate_nodes(selection, node_id) {
+  selection
+    .attr('id',d => d.id)
+    .attr('data-entity-id', d => d.id )
+    .attr('class', (d) => {return "node "+ d.label + (d.title == "UrClass" ? " ur"  : "") + (d.id == node_id ? " hilite" : " no_hilite" )})
+}
+
 function showNeighbors(cls_id) {
   var width = 350, height = 320;
-  $("#graph_display").empty()
+  $("#graph").empty()
   api
     .getNeighbors(cls_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
-      d3.select("#graph_display")
+      var sim = sim.create_sim(graph,"#graph",sim_conf)
+      draw_sim(sim, "#graph",sim_conf, _annotate_nodes, cls_id)
+      d3.select("#graph")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
     })
@@ -204,15 +219,16 @@ function showNeighbors(cls_id) {
 
 function showAncestors(cls_id) {
   var width = 350, height = 320;
-  $("#graph_display").empty()
+  $("#graph").empty()
   api
-  //    .getAncestors(cls_id)
     .getClassContext(cls_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height,cls_id)
-      d3.select("#graph_display")
+      var simul = sim.create_sim(graph,"#graph",sim_conf)
+      sim.draw_sim(simul, "#graph",sim_conf, _annotate_nodes, cls_id)
+
+      d3.select("#graph")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
       
@@ -221,14 +237,15 @@ function showAncestors(cls_id) {
 
 function showClassAndSibs(prop_id) {
   var width = 350, height = 320;
-  $("#graph_display").empty()
+  $("#graph").empty()
   api
     .getClassAndSibs(prop_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      d3api.renderSimulation("#graph_display",graph, width, height,prop_id)
-      d3.select("#graph_display")
+      var simul = sim.create_sim(graph,"#graph",sim_conf)
+      sim.draw_sim(simul, "#graph",sim_conf, _annotate_nodes, prop_id)
+      d3.select("#graph")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
       
@@ -241,8 +258,10 @@ function clearTable(table) {
     .remove()
 }
 
-function tdClass(ent,chk) {
-  return "<td class='entity source' data-entity-id='"+ent.id+"' data-entity-type='Class'>"+
+function tdEntity(ent,chk) {
+  return "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+
+    (ent.label||ent.ent)+
+    "'>"+
     (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "")+
     (ent.title||ent.name)+
     "<p><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
