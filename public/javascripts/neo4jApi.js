@@ -131,42 +131,40 @@ function getClassContext(prop_id) {
       {prop_id:prop_id}
     )
     .then(results => {
-      var nodes = [], links = []
+      var graph = {nodes:[], links:[]}
       //    session.close();
       if (_.isEmpty(results)) 
         return nodes
       results.records.forEach( res => {
         var pth = res.get('pth')
-        pth.forEach( p => {
-          nodes.push(p)
-        })
+        graph.nodes = _.unionBy(graph.nodes,[pth[0]],'id')
+        for (var i=1; i<_.size(pth);i++) {
+          graph.nodes = _.unionBy(graph.nodes,[pth[i]],'id')
+          graph.links.push( {target: pth[i-1].id, source: pth[i].id, type:"is_a"} )
+        }
       })
-      return nodes
+      return graph
     })
     .then(
-      nodes => {
+      graph => {
         return session.run( // proximal
           'MATCH p = (c:Class {id: $prop_id})-[:is_a*]->(r:Class {name:$urclass}) return \
 [x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
           {prop_id:prop_id,urclass:"UrClass"}
         ).then(results => {
           session.close();
-          var links = [];
-          _.reverse(nodes)
           if (!_.isEmpty(results)) {
             results.records.forEach( res => {
               var pth = res.get('pth')
-              pth.forEach( p => {
-                if (!_.find(nodes, n => { n == p })) {
-                  nodes.push(p)
-                }
-              })
+              graph.nodes = _.unionBy(graph.nodes,[pth[0]],'id')
+              for (var i=1; i<_.size(pth);i++) {
+                graph.nodes = _.unionBy(graph.nodes,[pth[i]],'id')
+                graph.links.push( {source: pth[i-1].id,target: pth[i].id,type:"is_a"} )
+              }
             })
           }
-          for( var i = 1; i < _.size(nodes) ; i++ ) {
-            links.push( { target: nodes[i-1].id, source: nodes[i].id, type:"is_a"} )
-          }
-          return {nodes, links}
+          console.log(graph)
+          return graph
         })
           .catch( err => { console.log("AGGGH", err) })
       }
