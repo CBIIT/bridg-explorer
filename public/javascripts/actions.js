@@ -14,6 +14,8 @@ var sim_conf = {
   alphaTarget: 0.1
 }
 
+assoc_graph = { nodes:[], links:[] }
+
 // init the page:
 $(function () {
   $("#ent-search-btn").on("click",e => {
@@ -140,6 +142,35 @@ function showEnt(ent_id) {
     .catch( err => { console.log("Barfed in showEnt", err) })
 }
 
+function update_assoc_graph(assoc, remove) {
+  var src_n = { title: assoc.src.title || assoc.src.name,
+                id: assoc.src.id,
+                label: assoc.src.label || assoc.src.ent }
+  var tgt_n = { title: assoc.dst.title || assoc.dst.name,
+                id: assoc.dst.id,
+                label: assoc.dst.label || assoc.dst.ent }
+  var link = { source: assoc.src.id, target: assoc.dst.id,
+               type: assoc.rtype }
+  if (!remove) {
+    assoc_graph.nodes = _.unionBy(assoc_graph.nodes, [src_n, tgt_n], 'id')
+    assoc_graph.links = _.unionWith(assoc_graph.links, [link],_.isEqual)
+  }
+  else {
+    // remove link
+    _.remove(assoc_graph.links, l => _.isEqual(l,link) )
+    // remove nodes if nec
+    if (!_.some(assoc_graph.links, ['source',link.source]) &&
+        !_.some(assoc_graph.links, ['target',link.source])) {
+      _.remove(assoc_graph.nodes, (n) => _.isEqual(n.id,link.source))
+    }
+    if (!_.some(assoc_graph.links, ['source',link.target]) &&
+        !_.some(assoc_graph.links, ['target',link.target])) {
+      _.remove(assoc_graph.nodes, (n) => _.isEqual(n.id,link.target) )
+    }
+  }
+  return true
+}
+
 function showAssoc(cls_id, outgoing) {
   api
     .getAssocs(cls_id,outgoing)
@@ -159,7 +190,15 @@ function showAssoc(cls_id, outgoing) {
                     tdEntity(assoc.dst,0) +
                     "</tr>").appendTo(t)
           r.find("[type=checkbox]").click(
-            e => { e.stopPropagation() }
+            e => {
+              e.stopPropagation()
+              if (e.target.closest("[type=checkbox]").checked) {
+                update_assoc_graph(assoc,0)
+              }
+              else {
+                update_assoc_graph(assoc,1)
+              }
+            }
           )
           r.find("button.src-assoc").click(
             function (e) {
