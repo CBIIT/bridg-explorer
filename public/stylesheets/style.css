@@ -7,7 +7,11 @@ a {
   color: #00B7FF;
 }
 
-svg.graph {
+.graph-disp {
+    overflow: scroll;
+    scroll-behavior: auto;
+    height: 350px;
+    width: auto;
 }
 
 .node {

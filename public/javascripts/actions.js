@@ -15,6 +15,7 @@ var sim_conf = {
 }
 
 assoc_graph = { nodes:[], links:[] }
+assoc_list = []
 
 // init the page:
 $(function () {
