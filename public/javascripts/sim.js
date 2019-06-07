@@ -58,6 +58,16 @@ function draw_sim(sim,svg_container,conf,...annotArgs) {
       .attr("r", conf.node_r)
       .call(drag(sim,conf))
       .on("dblclick", (d, i) => { d.fx = d.fy = null })
+  var nodelbl_r = svg
+      .append("g")
+      .selectAll("text")
+      .data(sim.nodes())
+      .join("text")
+      .attr("class", "node_lbl")
+      .attr("x", d => d.x-conf.node_r/2)
+      .attr("y", d => d.y+conf.node_r/2)
+      .text(d => d.title)
+      .call(drag(sim,conf))
   nodes_r.append("title")
     .text( d => d.title )
   nodes_r
@@ -66,6 +76,9 @@ function draw_sim(sim,svg_container,conf,...annotArgs) {
     nodes_r
       .attr("cx", d => d.x)
       .attr("cy", d => d.y)
+    nodelbl_r
+      .attr("x", d=>d.x-conf.node_r/2)
+      .attr("y", d=>d.y+conf.node_r/2)
     links_r
       .attr("x1", d => d.source.x)
       .attr("y1", d => d.source.y)

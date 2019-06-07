@@ -15,7 +15,7 @@ var sim_conf = {
 }
 
 assoc_graph = { nodes:[], links:[] }
-assoc_list = []
+assoc_list = {}
 
 // init the page:
 $(function () {
@@ -181,7 +181,7 @@ function showAssoc(cls_id, outgoing) {
       }
       var t = $("table#assocs")
       assocs.forEach( assoc => {
-        if (assoc == null) console.log("assoc is null")
+        if (assoc == null) console.error("assoc is null")
         else {
           var r = $("<tr>"+
                     tdEntity(assoc.src,1) +
@@ -189,45 +189,53 @@ function showAssoc(cls_id, outgoing) {
                     "<td class='assoc'>"+assoc.rtype+"</td>"+
                     "<td class='role dest'>"+assoc.dst.role+"</td>"+
                     tdEntity(assoc.dst,0) +
-                    "</tr>").appendTo(t)
-          r.find("[type=checkbox]").click(
-            e => {
-              e.stopPropagation()
-              if (e.target.closest("[type=checkbox]").checked) {
+                    "</tr>")
+          
+          var key = (assoc.src.title||assoc.src.name)+"-"+assoc.src.role+"-"+assoc.rtype+"-"+assoc.dst.role+"-"+(assoc.dst.title||assoc.dst.name)
+          if (!assoc_list[key]) {
+            r.appendTo(t)
+            r.attr("data-assoc-key", key)
+            assoc_list[key]=1
+            r.find("[type=checkbox]").click(
+              e => {
+                e.stopPropagation()
+                if (e.target.closest("[type=checkbox]").checked) {
+                  update_assoc_graph(assoc,0)
+                }
+                else {
+                  update_assoc_graph(assoc,1)
+                }
+              }
+            )
+            r.find("button.src-assoc").click(
+              function (e) {
+                e.stopPropagation()
+                showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1) } )
+            r.find("button.dst-assoc").click(
+              function (e) {
+                e.stopPropagation()
+                showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0) } )
+            r.find("button.dismiss-row").click(
+              e => {
+                e.stopPropagation()
                 update_assoc_graph(assoc,0)
-              }
-              else {
-                update_assoc_graph(assoc,1)
-              }
-            }
-          )
-          r.find("button.src-assoc").click(
-            function (e) {
-              e.stopPropagation();
-              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
-          r.find("button.dst-assoc").click(
-            function (e) {
-              e.stopPropagation();
-              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0); } )
-          r.find("button.dismiss-row").click(
-            e => {
-              e.stopPropagation();
-              e.target.closest("tr").remove(); } )
-          r.find("td.entity").click(
-            function () {
-              showEnt($(this).attr('data-entity-id'))
-              // showNeighbors($(this).attr('data-entity-id') )
-              switch ($(this).attr('data-entity-type')) {
-              case 'Class':
-                showAncestors($(this).attr('data-entity-id') )
-                break
-              case 'Property':
-                showClassAndSibs($(this).attr('data-entity-id') )
-                break
-              default:
-                console.error("Unhandled entity type")
-              }
-            })
+                e.target.closest("tr").remove(); } )
+            r.find("td.entity").click(
+              function () {
+                showEnt($(this).attr('data-entity-id'))
+                // showNeighbors($(this).attr('data-entity-id') )
+                switch ($(this).attr('data-entity-type')) {
+                case 'Class':
+                  showAncestors($(this).attr('data-entity-id') )
+                  break
+                case 'Property':
+                  showClassAndSibs($(this).attr('data-entity-id') )
+                  break
+                default:
+                  console.error("Unhandled entity type")
+                }
+              })
+          }
         }
       })
     })
@@ -295,6 +303,13 @@ function showClassAndSibs(prop_id) {
 function clearTable(table) {
   $(table+" tbody > tr > td > input[type=checkbox]:not(:checked)")
     .closest("tr")
+    .each( (i,r) => {
+      delete assoc_list[r.getAttribute("data-assoc-key")]
+      // why doesn't $(this) work??????
+    })
+
+  $(table+" tbody > tr > td > input[type=checkbox]:not(:checked)")
+    .closest("tr")
     .remove()
 }
 
@@ -310,3 +325,4 @@ function tdEntity(ent,chk) {
       "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "")+
     "</td>"
 }
+
