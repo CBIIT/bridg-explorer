@@ -17,6 +17,7 @@ var sim_conf = {
   alphaTarget: 0.03
 }
 
+AG = null
 assoc_graph = { nodes:[], links:[] }
 assoc_list = {}
 
@@ -69,7 +70,7 @@ function entSearch(e, stmtKey) {
                                label: "Class"},0) :
                      "<td>N/A</td>")+
                     "<td>"+ent.doc+"</td>"+
-                    "<td>"+ent.score+"</td>"+
+                    "<td>"+ent.score.toFixed(2)+"</td>"+
                     "</tr>").appendTo(t)
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
@@ -172,6 +173,20 @@ function update_assoc_graph(assoc, remove) {
       _.remove(assoc_graph.nodes, (n) => _.isEqual(n.id,link.target) )
     }
   }
+  if (!AG && _.size(assoc_graph)) { // init graph and render
+    AG = new gfact.Graph(assoc_graph, sim_conf, "#ascgraph")
+    AG.draw(null,_annotate_nodes,null)
+    AG.rendered.nodes
+      .on("click", (d) => showEnt(d.id))
+    AG.rendered.node_lbls
+      .on("click", (d) => showEnt(d.id))
+    $("#heat_ascgraph").click( () => {AG.heat()} )
+    $("#center_ascgraph").click( () => {AG.center_on()} )
+    $("#free_ascgraph").click( () => {AG.center_off()} )      
+  }
+  else {
+    AG.draw(assoc_graph)
+  }
   return true
 }
 
@@ -221,8 +236,10 @@ function showAssoc(cls_id, outgoing) {
             r.find("button.dismiss-row").click(
               e => {
                 e.stopPropagation()
+                var r = e.target.closest("tr")
+                delete assoc_list[r.getAttribute("data-assoc-key")]
                 update_assoc_graph(assoc,0)
-                e.target.closest("tr").remove(); } )
+                r.remove(); } )
             r.find("td.entity").click(
               function () {
                 showEnt($(this).attr('data-entity-id'))
@@ -253,23 +270,25 @@ function _annotate_nodes(selection, node_id) {
 }
 
 function showNeighbors(cls_id) {
-  var width = 350, height = 320;
   $("#graph").empty()
   api
     .getNeighbors(cls_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var sim = sim.create_sim(graph,"#graph",sim_conf)
-      draw_sim(sim, "#graph",sim_conf, _annotate_nodes, cls_id)
-      d3.select("#graph")
-        .selectAll(".node")
+      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      G.draw(null,_annotate_nodes, cls_id)
+      G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
+      G.rendered.node_lbls
+        .on("click", (d) => showEnt(d.id))
+      $("#heat_graph").click( () => {G.heat()} )
+      $("#center_graph").click( () => {G.center_on()} )
+      $("#free_graph").click( () => {G.center_off()} )      
     })
 }
 
 function showAncestors(cls_id) {
-  var width = 350, height = 320;
   $("#graph").empty()
   $("#heat_graph").off('click')
   $("#center_graph").off('click')
@@ -280,9 +299,10 @@ function showAncestors(cls_id) {
       if (_.isEmpty(graph))
         return null
       var G = new gfact.Graph(graph,sim_conf,"#graph")
-      G.draw(_annotate_nodes, cls_id)
-      d3.select("#graph")
-        .selectAll(".node")
+      G.draw(null,_annotate_nodes, cls_id)
+      G.rendered.nodes
+        .on("click", (d) => showEnt(d.id))
+      G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
       $("#heat_graph").click( () => {G.heat()} )
       $("#center_graph").click( () => {G.center_on()} )
@@ -292,7 +312,6 @@ function showAncestors(cls_id) {
 }
 
 function showClassAndSibs(prop_id) {
-  var width = 350, height = 320;
   $("#graph").empty()
   $("#heat_graph").off('click')
   api
@@ -301,9 +320,10 @@ function showClassAndSibs(prop_id) {
       if (_.isEmpty(graph))
         return null
       var G = new gfact.Graph(graph,sim_conf,"#graph")
-      G.draw(_annotate_nodes, prop_id)
-      d3.select("#graph")
-        .selectAll(".node")
+      G.draw(null,_annotate_nodes, prop_id)
+      G.rendered.nodes
+        .on("click", (d) => showEnt(d.id))
+      G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
       $("#heat_graph").click( () => {G.heat()} )
     })
