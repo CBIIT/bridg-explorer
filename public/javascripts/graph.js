@@ -48,17 +48,10 @@ function Graph (data, sim_conf, svg_container) {
       .force('collision', d3.forceCollide())
     this.set_parms(this.conf)
   }  
-  
-  this.draw = function (data,...annotArgs) {
+
+  this.draw = function (...annotArgs) {
     if (!this.sim) {
       return
-    }
-    if (data) {
-      this.data = data
-      var nodes = this.data.nodes.map(d => Object.create(d))
-      var links = this.data.links.map(d => Object.create(d))
-      this.sim.nodes(nodes)
-      this.sim.force('links').links(links)
     }
     var _annot_func, _annot_args
     [_annot_func, ..._annot_args] = annotArgs
@@ -67,21 +60,24 @@ function Graph (data, sim_conf, svg_container) {
     this.rendered = {}
     this.rendered.links = this.svg_d3
       .append("g")
+      .attr("class","links_g")
       .selectAll("line")
       .data(this.sim.force("links").links(), (d) => { return d.id } )
       .join("line")
       .attr("class","link");
     this.rendered.nodes = this.svg_d3
       .append("g")
+      .attr("class","nodes_g")
       .selectAll("circle")
       .data(this.sim.nodes(), d => d.id)
       .join("circle")
       .attr("class","node")
       .attr("r", this.conf.node_r)
-      .call(drag(this.sim,this.conf))
+      .call(this._drag())
       .on("dblclick", (d, i) => { d.fx = d.fy = null })
     this.rendered.node_lbls = this.svg_d3
       .append("g")
+      .attr("class","node_lbls_g")
       .selectAll("text")
       .data(this.sim.nodes(), d => d.id)
       .join("text")
@@ -89,7 +85,7 @@ function Graph (data, sim_conf, svg_container) {
       .attr("x", d => d.x-this.conf.node_r/2)
       .attr("y", d => d.y+this.conf.node_r/2)
       .text(d => d.title)
-      .call(drag(this.sim,this.conf))
+      .call(this._drag())
     this.rendered.nodes.append("title")
       .text( d => d.title )
     this.rendered.nodes
@@ -107,30 +103,51 @@ function Graph (data, sim_conf, svg_container) {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y)
     })
-    drag = (simulation,conf) => {
-      function dragstarted(d) {
-        if (!d3.event.active) simulation.alphaTarget(conf.alphaTarget).restart();
-        d.fx = d.x;
-        d.fy = d.y;
-      }
-      
-      function dragged(d) {
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-      }
-      
-      function dragended(d) {
-        if (!d3.event.active) simulation.alphaTarget(0);
-        d.fx = d3.event.x;
-        d.fy = d3.event.y;
-      }
-      
-      return d3.drag()
-        .on("start", dragstarted)
-        .on("drag", dragged)
-        .on("end", dragended);
-    }
   }
+
+  this.join = function (data, ...annotArgs) {
+    if (!this.sim) {
+      return
+    }
+    var _annot_func, _annot_args
+    [_annot_func, ..._annot_args] = annotArgs
+    this.data = data
+    var nodes = this.data.nodes.map(d => Object.create(d))
+    var links = this.data.links.map(d => Object.create(d))
+    this.sim.nodes(nodes)
+    this.sim.force('links').links(links)
+    this.rendered.links = this.svg_d3
+      .select('.links_g')
+      .selectAll('.link')
+      .data(this.sim.force("links").links(), d => d.id )
+    //      .join(".link")
+      .join("line")
+      .attr("class","link");
+    this.rendered.nodes = this.svg_d3
+      .select('.nodes_g')
+      .selectAll('.node')
+      .data(this.sim.nodes(), d => d.id  )
+    //      .join(".node")
+      .join("circle")
+      .attr("class","node")
+      .attr("r", this.conf.node_r)
+      .call(this._drag())
+      .on("dblclick", (d, i) => { d.fx = d.fy = null })
+    this.rendered.node_lbls = this.svg_d3
+      .select(".node_lbls_g")
+      .selectAll("text")
+      .data(this.sim.nodes(), d => d.id)
+      .join("text")
+      .attr("class", "node_lbl")
+      .attr("x", d => d.x-this.conf.node_r/2)
+      .attr("y", d => d.y+this.conf.node_r/2)
+      .text(d => d.title)
+      .call(this._drag())
+    this.rendered.nodes
+      .call( _annot_func ? _annot_func : d => d, _annot_args ) 
+    
+  }
+  
   this.heat = function () {
     this.sim.stop()
     this.rendered.nodes
@@ -146,6 +163,30 @@ function Graph (data, sim_conf, svg_container) {
     this.sim.stop()
     this.sim.force('center', null)
     this.sim.alphaTarget(this.conf.alphaTarget).restart()
+  }
+  this._drag = function () {
+    var obj=this
+    function dragstarted(d) {
+      if (!d3.event.active) obj.sim.alphaTarget(obj.conf.alphaTarget).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    }
+    
+    function dragged(d) {
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+    
+    function dragended(d) {
+      if (!d3.event.active) obj.sim.alphaTarget(0);
+      d.fx = d3.event.x;
+      d.fy = d3.event.y;
+    }
+    
+    return d3.drag()
+      .on("start", dragstarted)
+      .on("drag", dragged)
+      .on("end", dragended);
   }
   
   // init

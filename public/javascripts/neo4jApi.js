@@ -14,7 +14,7 @@ var cypherq = {
              OPTIONAL MATCH (c:Class)-[:has_property]->(n) \
              WITH n, d, c, score \
              WHERE score > $minScore \
-             RETURN n.name as name, head(labels(n)) as ent, n.id as id, c.name as owning_class, c.id as owning_class_id, d.body as doc, score',
+             RETURN n.name as title, head(labels(n)) as ent, n.id as id, c.name as owning_class, c.id as owning_class_id, d.body as doc, score',
   doc:       'CALL db.index.fulltext.queryNodes("ftDocuIndex", $qry) \
              YIELD node as d, score \
              MATCH (n)<--(d:Documentation) \
@@ -22,7 +22,7 @@ var cypherq = {
              OPTIONAL MATCH (c:Class)-[:has_property]->(n) \
              WITH n, d, c, score \
              WHERE score > $minScore \
-             RETURN n.name as name, head(labels(n)) as ent, n.id as id, c.name as owning_class, c.id as owning_class_id, d.body as doc, score'
+             RETURN n.name as title, head(labels(n)) as ent, n.id as id, c.name as owning_class, c.id as owning_class_id, d.body as doc, score'
 }
 
 function searchEnts(queryString, minScore,stmtKey) {
@@ -49,7 +49,7 @@ function getEntity(ent_id) {
   return session
     .run(
       "MATCH (e {id:$id})<--(d:Documentation) \
-             RETURN e.name as name, e.id as id, head(labels(e)) as ent, d.body as doc",
+             RETURN e.name as title, e.id as id, head(labels(e)) as ent, d.body as doc",
       {id:ent_id}
     )
     .then(result => {
@@ -73,7 +73,7 @@ function getProperties(cls_id) {
        WITH c, p \
        OPTIONAL MATCH (c), (p)<--(d:Documentation) \
        RETURN c.name as owning_class, c.id as owning_class_id, \
-       head(labels(p)) as ent, p.name as name, p.id as id, d.body as doc",
+       head(labels(p)) as ent, p.name as title, p.id as id, d.body as doc",
       {id:cls_id}
     )
     .then(result => {
@@ -107,10 +107,10 @@ function getAncestors(cls_id) {
 	return null;
       var res = result.records[0].get('p');
       var nodes = [], links = [], i;
-      nodes.push({ title: res[0].properties.name, label:'Class',
+      nodes.push({ title: res[0].properties.name, ent:'Class',
                    id: res[0].properties.id })
       for (i=1; i<_.size(res); i=i+1) {
-        nodes.push({ title: res[i].properties.name, label:'Class',
+        nodes.push({ title: res[i].properties.name, ent:'Class',
                      id: res[i].properties.id })
         links.push({source:res[i-1].properties.id, target:res[i].properties.id});
       }
@@ -127,7 +127,7 @@ function getClassContext(prop_id) {
   return session
     .run( // distal
       'MATCH p = (c:Class {id: $prop_id})<-[:is_a*]-(r:Class) return \
-[x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
+[x in nodes(p) | { title:x.name, id:x.id, ent:"Class" }] as pth',
       {prop_id:prop_id}
     )
     .then(results => {
@@ -149,7 +149,7 @@ function getClassContext(prop_id) {
       graph => {
         return session.run( // proximal
           'MATCH p = (c:Class {id: $prop_id})-[:is_a*]->(r:Class {name:$urclass}) return \
-[x in nodes(p) | { title:x.name, id:x.id, label:"Class" }] as pth',
+[x in nodes(p) | { title:x.name, id:x.id, ent:"Class" }] as pth',
           {prop_id:prop_id,urclass:"UrClass"}
         ).then(results => {
           session.close();
@@ -184,13 +184,13 @@ function getClassAndSibs(prop_id) {
       var res = results.records[0];
       if (_.isEmpty(res))
         return null
-      nodes.push( { title: res.get('cls_name'), label:'Class',
+      nodes.push( { title: res.get('cls_name'), ent:'Class',
                     id: res.get('cls_id')} )
       res.get('props').forEach( prop => {
-        nodes.push( { title: prop[0], label:'Property',
+        nodes.push( { title: prop[0], ent:'Property',
                       id: prop[1] }) })
       nodes.forEach( n => {
-        if (n.label=='Property') links.push({source:nodes[0].id, target:n.id})
+        if (n.ent=='Property') links.push({source:nodes[0].id, target:n.id})
       })
       return {nodes, links};
     })
@@ -209,9 +209,9 @@ function getNeighbors(cls_id) {
       session.close();
       var nodes = [], links = [], i = 0;
       results.records.forEach(res => {
-        var src_node = { title: res.get('src_name'), label:'Class',
+        var src_node = { title: res.get('src_name'), ent:'Class',
                          id: res.get('src_id') }
-        var tgt_node = { title: res.get('tgt_name'), label:'Class',
+        var tgt_node = { title: res.get('tgt_name'), ent:'Class',
                          id: res.get('tgt_id') }
         var source = _.findIndex(nodes, src_node)
         if (source == -1) {
@@ -255,8 +255,8 @@ function getAssocs(cls_id, outgoing) {
       var assocs = []
       results.records.forEach( res => {
         assocs.push( {
-          src : { title: res.get('src_name'), id: res.get('src_id'), label:'Class', role: res.get('src_role')},
-          dst : { title: res.get('dst_name'), id: res.get('dst_id'), label:'Class', role: res.get('dst_role')},
+          src : { title: res.get('src_name'), id: res.get('src_id'), ent:'Class', role: res.get('src_role')},
+          dst : { title: res.get('dst_name'), id: res.get('dst_id'), ent:'Class', role: res.get('dst_role')},
           rtype : res.get('rtype')
         })
       })

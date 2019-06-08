@@ -33,9 +33,21 @@ $(function () {
   })
   $("#node_display_head").on("click", e => {
     e.preventDefault()
-    showAncestors($("#node_display_head").attr('data-entity-id')) ||
-      showClassAndSibs($("#node_display_head").attr('data-entity-id'))
+    var ndh = $("#node_display_head")
+    if (!ndh.attr('data-entity-id')) return
+    showAncestors(ndh.attr('data-entity-id')) ||
+      showClassAndSibs(ndh.attr('data-entity-id'))
   })
+  $("#results_display_head").on("dblclick", e => {
+    e.preventDefault()
+    $("#results_display").slideToggle('fast')
+  })
+  $("#assoc_display_head").on("dblclick", e => {
+    e.preventDefault()
+    $("#assoc_display").slideToggle('fast')
+  })
+  
+                                
   $("#result-clean-up").click( e => {
     e.preventDefault()
     clearTable("table#results")
@@ -44,7 +56,6 @@ $(function () {
     e.preventDefault()
     clearTable("table#assocs")
   })
-  
 });
 
 function entSearch(e, stmtKey) {
@@ -67,7 +78,7 @@ function entSearch(e, stmtKey) {
                     "<td>"+ent.ent+"</td>"+
                     (ent.owning_class ?
                       tdEntity({title:ent.owning_class, id:ent.owning_class_id,
-                               label: "Class"},0) :
+                               ent: "Class"},0) :
                      "<td>N/A</td>")+
                     "<td>"+ent.doc+"</td>"+
                     "<td>"+ent.score.toFixed(2)+"</td>"+
@@ -114,7 +125,7 @@ function showEnt(ent_id) {
     .then(ent => {
       if (!ent) return;
       $("#node_display_head").empty()
-      $("#node_display_head").append( $("<b>"+ent.name + " ("+ent.ent+")</b>") )
+      $("#node_display_head").append( $("<b>"+ent.title + " ("+ent.ent+")</b>") )
       $("#node_display_head").attr('data-entity-id',ent_id) 
       $("#node_display").empty()
       $("<em>DOC</em><ul>"+"<li>"+ent.definition+"</li><li>"+ent.examples+"</li>"+
@@ -129,7 +140,7 @@ function showEnt(ent_id) {
               return null
             props.forEach(
               prop => {
-                $('<ul><strong><span class="prop_in_node_disp" data-entity-id="'+prop.id+'">'+prop.name+"</span></strong><li>"+prop.definition+"</li><li>"+
+                $('<ul><strong><span class="prop_in_node_disp" data-entity-id="'+prop.id+'">'+prop.title+"</span></strong><li>"+prop.definition+"</li><li>"+
                   prop.examples+"</li>"+
                   (_.size(prop.notes) ? "<li>"+prop.notes+"</li>" : "")+"</ul>")
                   .appendTo($("#node_display"))
@@ -148,12 +159,12 @@ function showEnt(ent_id) {
 }
 
 function update_assoc_graph(assoc, remove) {
-  var src_n = { title: assoc.src.title || assoc.src.name,
+  var src_n = { title: assoc.src.title,
                 id: assoc.src.id,
-                label: assoc.src.label || assoc.src.ent }
-  var tgt_n = { title: assoc.dst.title || assoc.dst.name,
+                ent: assoc.src.ent }
+  var tgt_n = { title: assoc.dst.title,
                 id: assoc.dst.id,
-                label: assoc.dst.label || assoc.dst.ent }
+                ent: assoc.dst.ent }
   var link = { source: assoc.src.id, target: assoc.dst.id,
                type: assoc.rtype }
   if (!remove) {
@@ -175,7 +186,7 @@ function update_assoc_graph(assoc, remove) {
   }
   if (!AG && _.size(assoc_graph)) { // init graph and render
     AG = new gfact.Graph(assoc_graph, sim_conf, "#ascgraph")
-    AG.draw(null,_annotate_nodes,null)
+    AG.draw(_annotate_nodes,null)
     AG.rendered.nodes
       .on("click", (d) => showEnt(d.id))
     AG.rendered.node_lbls
@@ -185,7 +196,7 @@ function update_assoc_graph(assoc, remove) {
     $("#free_ascgraph").click( () => {AG.center_off()} )      
   }
   else {
-    AG.draw(assoc_graph)
+    AG.join(assoc_graph)
   }
   return true
 }
@@ -209,7 +220,7 @@ function showAssoc(cls_id, outgoing) {
                     tdEntity(assoc.dst,0) +
                     "</tr>")
           
-          var key = (assoc.src.title||assoc.src.name)+"-"+assoc.src.role+"-"+assoc.rtype+"-"+assoc.dst.role+"-"+(assoc.dst.title||assoc.dst.name)
+          var key = assoc.src.title +"-"+assoc.src.role+"-"+assoc.rtype+"-"+assoc.dst.role+"-"+ assoc.dst.title
           if (!assoc_list[key]) {
             r.appendTo(t)
             r.attr("data-assoc-key", key)
@@ -266,7 +277,7 @@ function _annotate_nodes(selection, node_id) {
   selection
     .attr('id',d => d.id)
     .attr('data-entity-id', d => d.id )
-    .attr('class', (d) => {return "node "+ d.label + (d.title == "UrClass" ? " ur"  : "") + (d.id == node_id ? " hilite" : " no_hilite" )})
+    .attr('class', (d) => {return "node "+ d.ent  + (d.title == "UrClass" ? " ur"  : "") + (d.id == node_id ? " hilite" : " no_hilite" )})
 }
 
 function showNeighbors(cls_id) {
@@ -277,7 +288,7 @@ function showNeighbors(cls_id) {
       if (_.isEmpty(graph))
         return null
       var G = new gfact.Graph(graph,sim_conf,"#graph")
-      G.draw(null,_annotate_nodes, cls_id)
+      G.draw(_annotate_nodes, cls_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
@@ -299,7 +310,7 @@ function showAncestors(cls_id) {
       if (_.isEmpty(graph))
         return null
       var G = new gfact.Graph(graph,sim_conf,"#graph")
-      G.draw(null,_annotate_nodes, cls_id)
+      G.draw(_annotate_nodes, cls_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
@@ -320,7 +331,7 @@ function showClassAndSibs(prop_id) {
       if (_.isEmpty(graph))
         return null
       var G = new gfact.Graph(graph,sim_conf,"#graph")
-      G.draw(null,_annotate_nodes, prop_id)
+      G.draw(_annotate_nodes, prop_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
@@ -344,14 +355,14 @@ function clearTable(table) {
 
 function tdEntity(ent,chk) {
   return "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+
-    (ent.label||ent.ent)+
+    ent.ent +
     "'>"+
-    (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "")+
-    (ent.title||ent.name)+
+    (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "") +
+    ent.title +
     "<p><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
-    ( ent.label == 'Class' || ent.ent == 'Class' ?
-      "<button type='button' class='btn btn-secondary btn-small mr-1 src-assoc'>as Src</button>"+
-      "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "")+
+    ( ent.ent == 'Class' ?
+      "<button type='button' class='btn btn-secondary btn-small mr-1 src-assoc'> as Src</button>"+
+      "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "") +
     "</td>"
 }
 
