@@ -5,13 +5,16 @@ var d3 = require('d3')
 // var d3api = require('./d3api')
 var sim = require('./sim')
 
+gfact = require('./graph')
+
+
 var sim_conf = {
   node_r: 10,
   node_bnd: 25,
-  charge: 20,
+  charge: -10,
   link_dist: 30,
   link_strength:0.2,
-  alphaTarget: 0.1
+  alphaTarget: 0.03
 }
 
 assoc_graph = { nodes:[], links:[] }
@@ -268,17 +271,22 @@ function showNeighbors(cls_id) {
 function showAncestors(cls_id) {
   var width = 350, height = 320;
   $("#graph").empty()
+  $("#heat_graph").off('click')
+  $("#center_graph").off('click')
+  $("#free_graph").off('click')  
   api
     .getClassContext(cls_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var simul = sim.create_sim(graph,"#graph",sim_conf)
-      sim.draw_sim(simul, "#graph",sim_conf, _annotate_nodes, cls_id)
-
+      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      G.draw(_annotate_nodes, cls_id)
       d3.select("#graph")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
+      $("#heat_graph").click( () => {G.heat()} )
+      $("#center_graph").click( () => {G.center_on()} )
+      $("#free_graph").click( () => {G.center_off()} )      
       
     })
 }
@@ -286,17 +294,18 @@ function showAncestors(cls_id) {
 function showClassAndSibs(prop_id) {
   var width = 350, height = 320;
   $("#graph").empty()
+  $("#heat_graph").off('click')
   api
     .getClassAndSibs(prop_id)
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var simul = sim.create_sim(graph,"#graph",sim_conf)
-      sim.draw_sim(simul, "#graph",sim_conf, _annotate_nodes, prop_id)
+      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      G.draw(_annotate_nodes, prop_id)
       d3.select("#graph")
         .selectAll(".node")
         .on("click", (d) => showEnt(d.id))
-      
+      $("#heat_graph").click( () => {G.heat()} )
     })
 }
 
