@@ -46,3 +46,7 @@ text.node_lbl {
     fill: black;
     text-anchor: middle;
 }
+text.link_lbl {
+    font-size: 10pt;
+    fill: blue;
+}

@@ -112,7 +112,8 @@ function getAncestors(cls_id) {
       for (i=1; i<_.size(res); i=i+1) {
         nodes.push({ title: res[i].properties.name, ent:'Class',
                      id: res[i].properties.id })
-        links.push({source:res[i-1].properties.id, target:res[i].properties.id});
+        links.push({source:res[i-1].properties.id, target:res[i].properties.id,
+                    id:res[i-1].properties.id+"_"+res[i].properties.id});
       }
       return {nodes, links};
     })
@@ -140,7 +141,8 @@ function getClassContext(prop_id) {
         graph.nodes = _.unionBy(graph.nodes,[pth[0]],'id')
         for (var i=1; i<_.size(pth);i++) {
           graph.nodes = _.unionBy(graph.nodes,[pth[i]],'id')
-          graph.links.push( {target: pth[i-1].id, source: pth[i].id, type:"is_a"} )
+          graph.links.push( {target: pth[i-1].id, source: pth[i].id, type:"is_a",
+                             id: pth[i].id+"_"+pth[i-1].id+"_is_a"} )
         }
       })
       return graph
@@ -159,11 +161,11 @@ function getClassContext(prop_id) {
               graph.nodes = _.unionBy(graph.nodes,[pth[0]],'id')
               for (var i=1; i<_.size(pth);i++) {
                 graph.nodes = _.unionBy(graph.nodes,[pth[i]],'id')
-                graph.links.push( {source: pth[i-1].id,target: pth[i].id,type:"is_a"} )
+                graph.links.push( {source: pth[i-1].id,target: pth[i].id,type:"is_a",
+                             id: pth[i-1].id+"_"+pth[i].id+"_is_a"} )
               }
             })
           }
-          console.log(graph)
           return graph
         })
           .catch( err => { console.log("AGGGH", err) })
@@ -190,7 +192,9 @@ function getClassAndSibs(prop_id) {
         nodes.push( { title: prop[0], ent:'Property',
                       id: prop[1] }) })
       nodes.forEach( n => {
-        if (n.ent=='Property') links.push({source:nodes[0].id, target:n.id})
+        if (n.ent=='Property') links.push({source:nodes[0].id, target:n.id,
+                                           id:nodes[0].id+"_"+n.id+"_has_prop",
+                                           type:"has_prop"})
       })
       return {nodes, links};
     })
@@ -225,7 +229,8 @@ function getNeighbors(cls_id) {
           target = i
           i++
         }
-        links.push({source, target, type:res.get('rtype')});
+        links.push({source, target, type:res.get('rtype'),
+                    id: source+"_"+target+"_"+res.get('rtype')});
       });
       return {nodes, links};
     })
@@ -257,7 +262,8 @@ function getAssocs(cls_id, outgoing) {
         assocs.push( {
           src : { title: res.get('src_name'), id: res.get('src_id'), ent:'Class', role: res.get('src_role')},
           dst : { title: res.get('dst_name'), id: res.get('dst_id'), ent:'Class', role: res.get('dst_role')},
-          rtype : res.get('rtype')
+          rtype : res.get('rtype'),
+          id: res.get('src_id')+"_"+res.get('dst_id')+"_"+res.get('rtype')
         })
       })
       return assocs;

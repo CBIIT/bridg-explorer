@@ -166,7 +166,7 @@ function update_assoc_graph(assoc, remove) {
                 id: assoc.dst.id,
                 ent: assoc.dst.ent }
   var link = { source: assoc.src.id, target: assoc.dst.id,
-               type: assoc.rtype }
+               type: assoc.rtype, id:assoc.id }
   if (!remove) {
     assoc_graph.nodes = _.unionBy(assoc_graph.nodes, [src_n, tgt_n], 'id')
     assoc_graph.links = _.unionWith(assoc_graph.links, [link],_.isEqual)
@@ -196,7 +196,7 @@ function update_assoc_graph(assoc, remove) {
     $("#free_ascgraph").click( () => {AG.center_off()} )      
   }
   else {
-    AG.join(assoc_graph)
+    AG.join(assoc_graph, _annotate_nodes)
   }
   return true
 }
