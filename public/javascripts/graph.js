@@ -1,21 +1,39 @@
 var d3 = require('d3')
 var $ = require('jquery')
 var _ = require('lodash')
-
+// kludge: hardcoded fontsize in px 10pt ~ 8px
+var fsz = 8
 function _link_label(d, j) {
-    d3.select(this)
-      .append("path")
-      .attr("id", "path_"+d.id)
-      .attr("stroke","none")
-      .attr("fill","none")
-      .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
-    d3.select(this)
-      .append("text")
-      .attr("class","link_lbl")
-      .append("textPath")
-      .attr("startOffset","10%")
-      .attr("href", "#path_"+d.id)
-      .text(d.type || d.rtype)
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+
+  d3.select(this)
+    .append("path")
+    .attr("id", "path_"+d.id)
+    .attr("stroke","none")
+    .attr("fill","none")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .append("text")
+    .attr("class","link_lbl")
+    .append("textPath")
+    .attr("startOffset",_.toString(spct))
+    .attr("href", "#path_"+d.id)
+    .text((d.type || d.rtype)+" >")
+}
+
+function _link_label_upd(d, j) {
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+
+  d3.select(this)
+    .select("path")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .select("textPath")
+    .attr("startOffset",_.toString(spct))
   }
 
 function Graph (data, sim_conf, svg_container) {
@@ -133,8 +151,9 @@ function Graph (data, sim_conf, svg_container) {
         .attr("x2", d => d.target.x)
         .attr("y2", d => d.target.y)
       this.rendered.link_lbls
-        .select("path")
-        .attr("d", d => "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+        .each( _link_label_upd )
+//        .select("path")
+//        .attr("d", d => "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
      })
   }
 
@@ -149,8 +168,8 @@ function Graph (data, sim_conf, svg_container) {
     var nodes = this.data.nodes.map(d => {
       var i = _.findIndex(this.sim_data.nodes, e => e.id == d.id )
       if (i < 0) {
-        d.x = this.conf.wid/2 + 10*(Math.random()*2-1)
-        d.y = this.conf.ht/2 + 10*(Math.random()*2-1)
+        d.x = this.conf.wid/2 + 1.414*this.conf.node_r*(Math.random()*2-1)
+        d.y = this.conf.ht/2 + 1.414*this.conf.node_r*(Math.random()*2-1)
         return Object.create(d)
       }
       else
@@ -212,8 +231,12 @@ function Graph (data, sim_conf, svg_container) {
       .select(".link_lbls_g")
       .selectAll("g")
       .data(this.sim.force("links").links(), d => d.id)
-      .join("g")
-      .each( _link_label )
+      .join(
+        enter => enter.append("g")
+          .each( _link_label ),
+        update => update.select("g")
+          .each( _link_label_upd )
+      )
     this.rendered.nodes
       .call( _annot_func ? _annot_func : d => d, _annot_args )
     // this.heat()
