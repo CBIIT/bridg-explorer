@@ -38,15 +38,16 @@ $(function () {
     showAncestors(ndh.attr('data-entity-id')) ||
       showClassAndSibs(ndh.attr('data-entity-id'))
   })
-  $("#results_display_head").on("dblclick", e => {
-    e.preventDefault()
-    $("#results_display").slideToggle('fast')
-  })
-  $("#assoc_display_head").on("dblclick", e => {
-    e.preventDefault()
-    $("#assoc_display").slideToggle('fast')
-  })
-  
+
+  var hidem = ["#results_", "#assoc_", "#assoct_", "#ascgraph_", "#graph_","#node_"]
+  hidem
+    .forEach( stem => {
+      $(stem+"display_head")
+        .on("dblclick", e => {
+          e.preventDefault()
+          $(stem+"display").slideToggle('fast')
+        })
+    })
                                 
   $("#result-clean-up").click( e => {
     e.preventDefault()
