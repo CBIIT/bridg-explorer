@@ -3,6 +3,51 @@ var $ = require('jquery')
 var _ = require('lodash')
 // kludge: hardcoded fontsize in px 10pt ~ 8px
 var fsz = 8
+function _create_link ( d, i, n ) {
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+  d3.select(this)
+    .attr("class","link_g")
+    .append("line")
+    .attr("class","link")
+    .attr("x1", d.source.x)
+    .attr("y1", d.source.y)
+    .attr("x2", d.target.x)
+    .attr("y2", d.target.y)
+  d3.select(this)
+    .append("path")
+    .attr("id", "path_"+d.id)
+    .attr("stroke","none")
+    .attr("fill","none")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .append("text")
+    .attr("class","link_lbl")
+    .append("textPath")
+    .attr("startOffset",_.toString(spct))
+    .attr("href", "#path_"+d.id)
+    .text((d.type || d.rtype)+" >")
+}
+
+function _update_link(d, j) {
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+  d3.select(this)
+    .select("line")
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y)
+  d3.select(this)
+    .select("path")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .select("textPath")
+    .attr("startOffset",_.toString(spct))
+  }
+
 function _link_label(d, j) {
   var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
   var tl = (d.type || d.rtype).length * fsz
@@ -99,11 +144,14 @@ function Graph (data, sim_conf, svg_container) {
     this.rendered = {}
     this.rendered.links = this.svg_d3
       .append("g")
-      .attr("class","links_g")
-      .selectAll("line")
-      .data(this.sim.force("links").links(), d => d.id  )
-      .join("line")
-      .attr("class","link");
+      .attr("class", "links_g")
+      .selectAll("g")
+      .data(this.sim.force("links").links(), d => d.id )
+      .join(
+        enter => enter.append("g")
+          .attr("class","link")
+          .each( _create_link )
+      )
     this.rendered.nodes = this.svg_d3
       .append("g")
       .attr("class","nodes_g")
@@ -125,14 +173,6 @@ function Graph (data, sim_conf, svg_container) {
       .attr("y", d => (d.fy || d.y)+this.conf.node_r/2)
       .text(d => d.title)
       .call(this._drag())
-    this.rendered.link_lbls = this.svg_d3
-      .append("g")
-      .attr("class","link_lbls_g")
-      .selectAll("g")
-      .data(this.sim.force("links").links(), d => d.id)
-      .join("g")
-      .each( _link_label )
-
 
     this.rendered.nodes.append("title")
       .text( d => d.title )
@@ -146,14 +186,7 @@ function Graph (data, sim_conf, svg_container) {
         .attr("x", d => (d.fx || d.x)-this.conf.node_r/2)
         .attr("y", d => (d.fy || d.y)+this.conf.node_r/2)
       this.rendered.links
-        .attr("x1", d => d.source.x)
-        .attr("y1", d => d.source.y)
-        .attr("x2", d => d.target.x)
-        .attr("y2", d => d.target.y)
-      this.rendered.link_lbls
-        .each( _link_label_upd )
-//        .select("path")
-//        .attr("d", d => "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+        .each( _update_link )
      })
   }
 
@@ -183,24 +216,17 @@ function Graph (data, sim_conf, svg_container) {
         return this.sim_data.links[i]
     })
 
+
     this.sim.nodes(this.sim_data.nodes = nodes)
     this.sim.force('links').links(this.sim_data.links = links)
 
     this.rendered.links = this.svg_d3
       .select('.links_g')
-      .selectAll('.link')
+      .selectAll("g")
       .data(this.sim.force("links").links(), d => d.id )
       .join(
-        enter => enter.append("line")
-          .attr("class","link")
-          .each( function ( d, i, n ) {
-            d3.select(this)
-              .attr("x1", d.source.x)
-              .attr("y1", d.source.y)
-              .attr("x2", d.target.x)
-              .attr("y2", d.target.y)
-          }),
-
+        enter => enter.append("g")
+          .each( _create_link )
       )
     this.rendered.nodes = this.svg_d3
       .select('.nodes_g')
@@ -227,16 +253,6 @@ function Graph (data, sim_conf, svg_container) {
           .text(d => d.title)
       )
       .call(this._drag())
-    this.rendered.link_lbls = this.svg_d3
-      .select(".link_lbls_g")
-      .selectAll("g")
-      .data(this.sim.force("links").links(), d => d.id)
-      .join(
-        enter => enter.append("g")
-          .each( _link_label ),
-        update => update.select("g")
-          .each( _link_label_upd )
-      )
     this.rendered.nodes
       .call( _annot_func ? _annot_func : d => d, _annot_args )
     // this.heat()
