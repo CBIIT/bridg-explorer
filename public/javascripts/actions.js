@@ -192,9 +192,7 @@ function update_assoc_graph(assoc, remove) {
       .on("click", (d) => showEnt(d.id))
     AG.rendered.node_lbls
       .on("click", (d) => showEnt(d.id))
-    $("#heat_ascgraph").click( () => {AG.heat()} )
-    $("#center_ascgraph").click( () => {AG.center_on()} )
-    $("#free_ascgraph").click( () => {AG.center_off()} )      
+    graphControlsSetup("#ascgraph",AG)
   }
   else {
     AG.join(assoc_graph, _annotate_nodes)
@@ -294,17 +292,14 @@ function showNeighbors(cls_id) {
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      $("#heat_graph").click( () => {G.heat()} )
-      $("#center_graph").click( () => {G.center_on()} )
-      $("#free_graph").click( () => {G.center_off()} )      
+      graphControlsSetup("#graph",G)
     })
+
+
 }
 
 function showAncestors(cls_id) {
   $("#graph").empty()
-  $("#heat_graph").off('click')
-  $("#center_graph").off('click')
-  $("#free_graph").off('click')  
   api
     .getClassContext(cls_id)
     .then(graph => {
@@ -316,16 +311,12 @@ function showAncestors(cls_id) {
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      $("#heat_graph").click( () => {G.heat()} )
-      $("#center_graph").click( () => {G.center_on()} )
-      $("#free_graph").click( () => {G.center_off()} )      
-      
+      graphControlsSetup("#graph",G)
     })
 }
 
 function showClassAndSibs(prop_id) {
   $("#graph").empty()
-  $("#heat_graph").off('click')
   api
     .getClassAndSibs(prop_id)
     .then(graph => {
@@ -337,7 +328,7 @@ function showClassAndSibs(prop_id) {
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      $("#heat_graph").click( () => {G.heat()} )
+      graphControlsSetup("#graph",G)
     })
 }
 
@@ -367,3 +358,15 @@ function tdEntity(ent,chk) {
     "</td>"
 }
 
+function graphControlsSetup (container, graph) {
+  var cntr = container.match(/^#(.*)/)[1];
+  if (!cntr) {
+    console.error("No name base in '"+container+"'");
+    return false
+  }
+  $("#heat_"+cntr).click( () => {graph.heat()} )
+  $("#freeze_"+cntr).click( () => {graph.freeze()} )
+  $("#center_"+cntr).click( () => {graph.center_on()} )
+  $("#free_"+cntr).click( () => {graph.center_off()} )
+  return true
+}

@@ -1,85 +1,6 @@
 var d3 = require('d3')
 var $ = require('jquery')
 var _ = require('lodash')
-// kludge: hardcoded fontsize in px 10pt ~ 8px
-var fsz = 8
-function _create_link ( d, i, n ) {
-  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
-  var tl = (d.type || d.rtype).length * fsz
-  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
-  d3.select(this)
-    .attr("class","link_g")
-    .append("line")
-    .attr("class","link")
-    .attr("x1", d.source.x)
-    .attr("y1", d.source.y)
-    .attr("x2", d.target.x)
-    .attr("y2", d.target.y)
-  d3.select(this)
-    .append("path")
-    .attr("id", "path_"+d.id)
-    .attr("stroke","none")
-    .attr("fill","none")
-    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
-  d3.select(this)
-    .append("text")
-    .attr("class","link_lbl")
-    .append("textPath")
-    .attr("startOffset",_.toString(spct))
-    .attr("href", "#path_"+d.id)
-    .text((d.type || d.rtype)+" >")
-}
-
-function _update_link(d, j) {
-  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
-  var tl = (d.type || d.rtype).length * fsz
-  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
-  d3.select(this)
-    .select("line")
-    .attr("x1", d => d.source.x)
-    .attr("y1", d => d.source.y)
-    .attr("x2", d => d.target.x)
-    .attr("y2", d => d.target.y)
-  d3.select(this)
-    .select("path")
-    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
-  d3.select(this)
-    .select("textPath")
-    .attr("startOffset",_.toString(spct))
-  }
-
-function _link_label(d, j) {
-  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
-  var tl = (d.type || d.rtype).length * fsz
-  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
-
-  d3.select(this)
-    .append("path")
-    .attr("id", "path_"+d.id)
-    .attr("stroke","none")
-    .attr("fill","none")
-    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
-  d3.select(this)
-    .append("text")
-    .attr("class","link_lbl")
-    .append("textPath")
-    .attr("startOffset",_.toString(spct))
-    .attr("href", "#path_"+d.id)
-    .text((d.type || d.rtype)+" >")
-}
-
-function _link_label_upd(d, j) {
-  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
-  var tl = (d.type || d.rtype).length * fsz
-  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
-
-  d3.select(this)
-    .select("path")
-    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
-  d3.select(this)
-    .select("textPath")
-    .attr("startOffset",_.toString(spct))
-  }
 
 function Graph (data, sim_conf, svg_container) {
   this.data = data
@@ -264,6 +185,12 @@ function Graph (data, sim_conf, svg_container) {
       .each( (d,i,n) => {d.fx = d.fy = null } )
     this.sim.alphaTarget(this.conf.alphaTarget).restart()
   }
+  this.freeze = function () {
+    this.sim.stop()
+    this.rendered.nodes
+      .each( (d,i,n) => {d.fx = d.x; d.fy = d.y } )
+    this.sim.alphaTarget(this.conf.alphaTarget).restart()
+  }
   this.center_on = function () {
     this.sim.stop()
     this.sim.force('center', this._force_center)
@@ -301,7 +228,55 @@ function Graph (data, sim_conf, svg_container) {
   
   // init
   this._create_sim()
+}
+
+// kludge: hardcoded fontsize in px 10pt ~ 8px
+var fsz = 8
+function _create_link ( d, i, n ) {
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+  d3.select(this)
+    .attr("class","link_g")
+    .append("line")
+    .attr("class","link")
+    .attr("x1", d.source.x)
+    .attr("y1", d.source.y)
+    .attr("x2", d.target.x)
+    .attr("y2", d.target.y)
+  d3.select(this)
+    .append("path")
+    .attr("id", "path_"+d.id)
+    .attr("stroke","none")
+    .attr("fill","none")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .append("text")
+    .attr("class","link_lbl")
+    .append("textPath")
+    .attr("startOffset",_.toString(spct))
+    .attr("href", "#path_"+d.id)
+    .text((d.type || d.rtype)+" >")
+}
+
+function _update_link(d, j) {
+  var pl = Math.sqrt((d.source.x-d.target.x)**2 + (d.source.y-d.target.y)**2)
+  var tl = (d.type || d.rtype).length * fsz
+  var spct = (pl > tl ? (pl - _.toNumber(tl))/2 : 0)
+  d3.select(this)
+    .select("line")
+    .attr("x1", d => d.source.x)
+    .attr("y1", d => d.source.y)
+    .attr("x2", d => d.target.x)
+    .attr("y2", d => d.target.y)
+  d3.select(this)
+    .select("path")
+    .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
+  d3.select(this)
+    .select("textPath")
+    .attr("startOffset",_.toString(spct))
   }
+
 
 exports.Graph = Graph
 
