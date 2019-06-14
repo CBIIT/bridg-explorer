@@ -213,9 +213,9 @@ function showAssoc(cls_id, outgoing) {
         else {
           var r = $("<tr>"+
                     tdEntity(assoc.src,1) +
-                    "<td class='role source'>"+assoc.src.role+"</td>"+
-                    "<td class='assoc'>"+assoc.rtype+"</td>"+
-                    "<td class='role dest'>"+assoc.dst.role+"</td>"+
+                    "<td class='role source col-1'>"+assoc.src.role+"</td>"+
+                    "<td class='assoc col-1'>"+assoc.rtype+"</td>"+
+                    "<td class='role dest col-1'>"+assoc.dst.role+"</td>"+
                     tdEntity(assoc.dst,0) +
                     "</tr>")
           
@@ -349,13 +349,13 @@ function tdEntity(ent,chk) {
   return "<td class='entity' data-entity-id='"+ent.id+"' data-entity-type='"+
     ent.ent +
     "'>"+
-    (chk ? "<input class='mr-2' type='checkbox' class='keep-me'/>" : "") +
+    (chk ? "<input class='mr-1 keep-me' type='checkbox'/>" : "") +
     ent.title +
-    "<p><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
+    "<p><div class='btn-group mr-1' role='group'><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
     ( ent.ent == 'Class' ?
       "<button type='button' class='btn btn-secondary btn-small mr-1 src-assoc'> as Src</button>"+
       "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "") +
-    "</td>"
+    "</div></td>"
 }
 
 function graphControlsSetup (container, graph) {
