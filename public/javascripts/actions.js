@@ -1,6 +1,7 @@
 var _ = require('lodash')
 var api = require('./neo4jApi')
-var $ = require('jquery')
+//var $ = require('jquery')
+//require('jqueryui')
 var d3 = require('d3')
 // var d3api = require('./d3api')
 var sim = require('./sim')
@@ -13,8 +14,8 @@ var sim_conf = {
   node_bnd: 25,
   charge: -10,
   link_dist: 30,
-  link_strength:0.2,
-  alphaTarget: 0.03
+  link_strength:0.5,
+  alphaTarget: 0.1
 }
 
 AG = null
@@ -57,6 +58,9 @@ $(function () {
     e.preventDefault()
     clearTable("table#assocs")
   })
+  $("#graph_tabs").tabs()
+
+
 });
 
 function entSearch(e, stmtKey) {
