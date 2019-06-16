@@ -91,33 +91,7 @@ function entSearch(e, stmtKey) {
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
           )
-          r.find("button.src-assoc").click(
-            function (e) {
-              e.stopPropagation();
-              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1); } )
-          r.find("button.dst-assoc").click(
-            function (e) {
-              e.stopPropagation();
-              showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0); } )
-          r.find("button.dismiss-row").click(
-            function (e) {
-              e.stopPropagation();
-              e.target.closest("tr").remove(); } )
-          r.find("td.entity").click(function () {
-            showEnt($(this).attr('data-entity-id'))
-            // showNeighbors($(this).attr('data-entity-id') )
-            switch ($(this).attr('data-entity-type')) {
-            case 'Class':
-              showAncestors($(this).attr('data-entity-id') )
-              break
-            case 'Property':
-              showClassAndSibs($(this).attr('data-entity-id') )
-              break
-            default:
-              console.error("Unhandled entity type")
-            }
-          })
-            
+          assocControlsSetup(r)
 	}
       });
     });
@@ -204,9 +178,8 @@ function update_assoc_graph(assoc, remove) {
   return true
 }
 
-function showAssoc(cls_id, outgoing) {
-  api
-    .getAssocs(cls_id,outgoing)
+function showAssoc(cls_id, getAssocFunction, outgoing) {
+  getAssocFunction(cls_id,outgoing)
     .then( assocs => {
       if (_.isEmpty(assocs)) {
         return null
@@ -239,14 +212,6 @@ function showAssoc(cls_id, outgoing) {
                 }
               }
             )
-            r.find("button.src-assoc").click(
-              function (e) {
-                e.stopPropagation()
-                showAssoc($(e.target.closest("td")).attr('data-entity-id'), 1) } )
-            r.find("button.dst-assoc").click(
-              function (e) {
-                e.stopPropagation()
-                showAssoc($(e.target.closest("td")).attr('data-entity-id'), 0) } )
             r.find("button.dismiss-row").click(
               e => {
                 e.stopPropagation()
@@ -254,21 +219,7 @@ function showAssoc(cls_id, outgoing) {
                 delete assoc_list[r.getAttribute("data-assoc-key")]
                 update_assoc_graph(assoc,0)
                 r.remove(); } )
-            r.find("td.entity").click(
-              function () {
-                showEnt($(this).attr('data-entity-id'))
-                // showNeighbors($(this).attr('data-entity-id') )
-                switch ($(this).attr('data-entity-type')) {
-                case 'Class':
-                  showAncestors($(this).attr('data-entity-id') )
-                  break
-                case 'Property':
-                  showClassAndSibs($(this).attr('data-entity-id') )
-                  break
-                default:
-                  console.error("Unhandled entity type")
-                }
-              })
+            assocControlsSetup(r)
           }
         }
       })
@@ -357,9 +308,58 @@ function tdEntity(ent,chk) {
     ent.title +
     "<p><div class='btn-group mr-1' role='group'><button type='button' class='btn btn-secondary btn-small mr-1 dismiss-row'>X</button>"+
     ( ent.ent == 'Class' ?
-      "<button type='button' class='btn btn-secondary btn-small mr-1 src-assoc'> as Src</button>"+
-      "<button type='button' class='btn btn-secondary btn-small dst-assoc'>as Dst</button>" : "") +
+      "\
+    <div class='btn-group mr-1' role='group'> \
+    <button type='button' class='btn btn-secondary btn-small src-assoc'>asSrc</button> \
+    <button type='button' class='btn btn-secondary btn-small dst-assoc'>asDst</button> \
+    <button type='button' class='btn btn-secondary btn-small is-assoc'>Is</button> \
+    <button type='button' class='btn btn-secondary btn-small has-assoc'>Has</button> \
+    </div>"
+      : "") +
     "</div></td>"
+}
+
+function assocControlsSetup(r) {
+  r.find("button.src-assoc").click(
+    function (e) {
+      e.stopPropagation()
+      showAssoc($(e.target.closest("td")).attr('data-entity-id'), api.getAssocs, 1) } )
+  r.find("button.dst-assoc").click(
+    function (e) {
+      e.stopPropagation()
+      showAssoc($(e.target.closest("td")).attr('data-entity-id'), api.getAssocs, 0) } )
+  r.find("button.is-assoc").click(
+    e => {
+      e.stopPropagation()
+      showAssoc($(e.target.closest("td")).attr('data-entity-id'), api.getAncestorAsAssoc, 0) 
+    }
+  )
+  r.find("button.has-assoc").click(
+    e => {
+      e.stopPropagation()
+      showAssoc($(e.target.closest("td")).attr('data-entity-id'), api.getPropsAsAssocs, 0)
+    }
+  )
+  r.find("button.dismiss-row").click(
+    e => {
+      e.stopPropagation()
+      var r = e.target.closest("tr")
+      r.remove(); } )
+  r.find("td.entity").click(
+    function () {
+      showEnt($(this).attr('data-entity-id'))
+      // showNeighbors($(this).attr('data-entity-id') )
+      switch ($(this).attr('data-entity-type')) {
+      case 'Class':
+        showAncestors($(this).attr('data-entity-id') )
+        break
+      case 'Property':
+        showClassAndSibs($(this).attr('data-entity-id') )
+        break
+      default:
+        console.error("Unhandled entity type")
+      }
+    })
 }
 
 function graphControlsSetup (container, graph) {

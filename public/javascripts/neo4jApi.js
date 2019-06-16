@@ -175,9 +175,9 @@ function getClassContext(prop_id) {
 }
 function getClassAndSibs(prop_id) {
   var session = driver.session();
+  var cypher_q = 'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class) OPTIONAL MATCH (c)-[:has_property]->(s:Property) WHERE s.id <> $prop_id WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props'
   return session.run(
-    'MATCH (p:Property {id: $prop_id})<-[:has_property]-(c:Class) OPTIONAL MATCH (c)-[:has_property]->(s:Property) WHERE s.id <> $prop_id WITH c,p,collect(s) as ls RETURN c.name as cls_name, c.id as cls_id, [ [p.name, p.id] ]+[s in ls | [s.name, s.id]] as props',
-    {prop_id:prop_id})
+    cypher_q, {prop_id:prop_id})
     .then(results => {
       session.close();
       if (_.isEmpty(results))
@@ -268,7 +268,60 @@ function getAssocs(cls_id, outgoing) {
       })
       return assocs;
     })
-    .catch( err => { console.log("Barfed in getAssocs: ",err) });
+    .catch( err => { console.error("Barfed in getAssocs: ",err) });
+}
+
+function getPropsAsAssocs(cls_id) {
+  var session = driver.session()
+  var cypher_q = "MATCH (c:Class {id: $cls_id})-[:has_property]->(p:Property) \
+                  RETURN c.name as cls_name, c.id as cls_id, p.name as prop_name, p.id as prop_id"
+
+  return session.run(
+    cypher_q, {cls_id:cls_id})
+    .then( results => {
+      session.close();
+      if (_.isEmpty(results))
+        return []
+      var assocs=[]
+      results.records.forEach( res => {
+        assocs.push( {
+          src : { title: res.get('cls_name'), id: res.get("cls_id"), ent:'Class', role: 'class' },
+          dst : { title: res.get('prop_name'), id: res.get("prop_id"), ent:'Property', role: 'property'},
+          rtype : 'has_property',
+          id: res.get('cls_id')+"_"+res.get('prop_id')+"_has_property"
+        })
+      })
+      return assocs
+    })
+    .catch( err => { console.error("Barfed in getPropsAsAssocs: ",err) })
+}
+
+function getAncestorAsAssoc(cls_id)  {
+  var session = driver.session()
+  var cypher_q = "MATCH (s:Class {id: $cls_id})-[:is_a]->(d:Class) \
+                  RETURN d.name as dst_name, d.id as dst_id, s.name as src_name, s.id as src_id"
+
+  return session.run(
+    cypher_q, {cls_id:cls_id})
+    .then( results => {
+      session.close();
+      if (_.isEmpty(results))
+        return []
+      var assocs=[]
+      console.log("here")
+      results.records.forEach( res => {
+        if (res.get("dst_name") != 'UrClass') {
+          assocs.push( {
+            src : { title: res.get('src_name'), id: res.get("src_id"), ent:'Class', role: 'child' },
+            dst : { title: res.get('dst_name'), id: res.get("dst_id"), ent:'Class', role: 'parent'},
+            rtype : 'is_a',
+            id: res.get('src_id')+"_"+res.get('dst_id')+"_is_a"
+          })
+        }
+      })
+      return assocs
+    })
+    .catch( err => { console.error("Barfed in getPropsAsAssocs: ",err) })
 }
 
 exports.getAssocs = getAssocs;
@@ -279,3 +332,5 @@ exports.getProperties = getProperties;
 exports.getAncestors = getAncestors;
 exports.getClassAndSibs = getClassAndSibs;
 exports.getClassContext = getClassContext;
+exports.getPropsAsAssocs = getPropsAsAssocs;
+exports.getAncestorAsAssoc = getAncestorAsAssoc;
