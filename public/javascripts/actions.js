@@ -12,10 +12,10 @@ gfact = require('./graph')
 var sim_conf = {
   node_r: 10,
   node_bnd: 25,
-  charge: -10,
+  charge: 10,
   link_dist: 30,
   link_strength:0.5,
-  alphaTarget: 0.1
+  alphaTarget: 0.05
 }
 
 AG = null
@@ -222,7 +222,7 @@ function showAssoc(cls_id, getAssocFunction, outgoing) {
                 e.stopPropagation()
                 var r = e.target.closest("tr")
                 delete assoc_list[r.getAttribute("data-assoc-key")]
-                update_assoc_graph(assoc,0)
+                update_assoc_graph(assoc,1)
                 r.remove(); } )
             assocControlsSetup(r)
           }
