@@ -308,13 +308,12 @@ function getAncestorAsAssoc(cls_id)  {
       if (_.isEmpty(results))
         return []
       var assocs=[]
-      console.log("here")
       results.records.forEach( res => {
         if (res.get("dst_name") != 'UrClass') {
           assocs.push( {
             src : { title: res.get('src_name'), id: res.get("src_id"), ent:'Class', role: 'child' },
             dst : { title: res.get('dst_name'), id: res.get("dst_id"), ent:'Class', role: 'parent'},
-            rtype : 'is_a',
+            rtype : 'ISA',
             id: res.get('src_id')+"_"+res.get('dst_id')+"_is_a"
           })
         }

@@ -58,8 +58,13 @@ $(function () {
     e.preventDefault()
     clearTable("table#assocs")
   })
-  $("#graph_tabs").tabs()
-
+  $("#graph_tabs").tabs({
+    heightStyle:"auto"
+  })
+  // establish ht, wd
+  $("#graph_tabs").tabs("option","active",0)
+  sim_conf.wid = $("#graph").width()
+  sim_conf.ht =  $("#graph").height()
 
 });
 

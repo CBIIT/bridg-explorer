@@ -10,6 +10,7 @@ function Graph (data, sim_conf, svg_container) {
     sim_conf.wid = this.svg_jq.width()
     sim_conf.ht = this.svg_jq.height()
   }
+  this.svg_jq.attr("viewBox",[0,0,sim_conf.wid,sim_conf.ht])
   this.conf = sim_conf
   this.sim = null
   this.set_parms = function (conf) {
@@ -38,7 +39,6 @@ function Graph (data, sim_conf, svg_container) {
     if (!this.conf || !this.conf.node_r) {
       return
     }
-    this.svg_jq.attr("viewBox",[0,0,this.conf.wid,this.conf.ht])
     this.sim_data =
         { nodes: this.data.nodes.map(d => Object.create(d)),
           links: this.data.links.map(d => Object.create(d)) }
@@ -256,7 +256,9 @@ function _create_link ( d, i, n ) {
     .append("textPath")
     .attr("startOffset",_.toString(spct))
     .attr("href", "#path_"+d.id)
-    .text((d.type || d.rtype)+" >")
+    .attr("side", d.source.x > d.target.x ? "right" : "left")
+    .text( (d.source.x > d.target.x) ? "< "+(d.type||d.rtype) :
+           (d.type||d.rtype)+" >")
 }
 
 function _update_link(d, j) {
@@ -273,8 +275,12 @@ function _update_link(d, j) {
     .select("path")
     .attr("d", "M"+d.source.x+" "+d.source.y+" L"+d.target.x+" "+d.target.y)
   d3.select(this)
+    .select("text")
     .select("textPath")
     .attr("startOffset",_.toString(spct))
+    .attr("side", d.source.x > d.target.x ? "right" : "left")
+    .text( (d.source.x > d.target.x) ? "< "+(d.type||d.rtype) :
+           (d.type||d.rtype)+" >")
   }
 
 
