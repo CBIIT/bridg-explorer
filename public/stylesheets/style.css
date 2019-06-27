@@ -17,6 +17,7 @@ a {
 .node {
     stroke: #222;
     stroke-width: 1.5px;
+    font-size: 15pt;
 }
 .node.Class {
     fill: #484;
@@ -42,7 +43,7 @@ a {
     stroke-width: 3px;
 }
 text.node_lbl {
-    font-size: 10pt;
+    font-size: 15pt;
     fill: black;
     text-anchor: middle;
 }

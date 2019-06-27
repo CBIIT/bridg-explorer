@@ -171,15 +171,15 @@ function update_assoc_graph(assoc, remove) {
   if (!AG && _.size(assoc_graph)) { // init graph and render
     AG = new gfact.Graph(assoc_graph, sim_conf, "#ascgraph")
     AG.draw(_annotate_nodes,null)
-    AG.rendered.nodes
-      .on("click", (d) => showEnt(d.id))
-    AG.rendered.node_lbls
-      .on("click", (d) => showEnt(d.id))
     graphControlsSetup("#ascgraph",AG)
   }
   else {
     AG.join(assoc_graph, _annotate_nodes)
   }
+  AG.rendered.nodes
+    .on("click", (d) => showEnt(d.id))
+  AG.rendered.node_lbls
+    .on("click", (d) => showEnt(d.id))
   return true
 }
 
