@@ -16,11 +16,18 @@ If you have suggestions for additional features, or find bugs, please [open an i
 
 * Full text search
 
-* View documentation
+![search box detail](./screenshots/search-box.png)
 
-* View BRIDG Class context
+* View results and documentation
+
+![search results table detail](./screenshots/search-results-1.png)
+
+* View BRIDG Class context / Explore entity documentation
+
+![entity graph plus documentation panel detail](./screenshot/entity-graph.png)
 
 * Explore Associations / Create Association Paths
 
+![association results table detail](./screenshots/assoc-table.png)
 
-
+![association graph detail](./screenshots/assoc-graph.png)
