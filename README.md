@@ -24,9 +24,9 @@ If you have suggestions for additional features, or find bugs, please [open an i
 
 * View BRIDG Class context / Explore entity documentation
 
-![entity graph plus documentation panel detail](./screenshot/entity-graph.png)
+![entity graph plus documentation panel detail](./screenshots/entity-graph.png)
 
-* Explore Associations / Create Association Paths
+* Explore Associations / Create and Visualize Association Paths
 
 ![association results table detail](./screenshots/assoc-table.png)
 
