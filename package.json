@@ -2,16 +2,18 @@
   "name": "bridg-explorer",
   "version": "0.1.0",
   "private": true,
-  "scripts": {
+    "scripts": {
+    "build": "browserify ./public/javascripts/actions.js ./public/javascripts/graph.js ./public/javascripts/sim.js > ./public/javascripts/bundle.js",
     "start": "node ./bin/www",
-      "watch": "watchify ./public/javascripts/actions.js ./public/javascripts/graph.js ./public/javascripts/sim.js -o ./public/javascripts/bundle.js &",
-      "unwatch": "PID=$(ps | grep watchify | grep -v grep | { read i j ; echo $i ; }) ; [[ -n $PID ]] && kill $PID ; exit 0"
+    "watch": "watchify ./public/javascripts/actions.js ./public/javascripts/graph.js ./public/javascripts/sim.js -o ./public/javascripts/bundle.js &",
+    "unwatch": "PID=$(ps | grep watchify | grep -v grep | { read i j ; echo $i ; }) ; [[ -n $PID ]] && kill $PID ; exit 0"
   },
   "dependencies": {
     "acorn": "^6.1.1",
-    "bootstrap": "^4.3.1",
+      "bootstrap": "^4.3.1",
+      "browserify":"~16.2.3",
+    "clean-css": ">=4.1.11",
     "cookie-parser": "~1.4.3",
-    "clean-css": ">=4.1.11",  
     "d3": "^5.9.2",
     "debug": "~2.6.9",
     "express": "~4.16.0",
@@ -20,7 +22,8 @@
     "jqueryui": "^1.11.1",
     "morgan": "~1.9.0",
     "neo4j-driver": "^1.7.5",
-    "popper": "^1.15",
-    "pug": "2.0.0-beta11"
+    "popper.js": "^1.15.0",
+      "pug": "2.0.0-beta11",
+      "watchify": "~3.11.1"
   }
 }
