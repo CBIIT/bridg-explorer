@@ -313,8 +313,8 @@ function getAncestorAsAssoc(cls_id)  {
           assocs.push( {
             src : { title: res.get('src_name'), id: res.get("src_id"), ent:'Class', role: 'child' },
             dst : { title: res.get('dst_name'), id: res.get("dst_id"), ent:'Class', role: 'parent'},
-            rtype : '__ISA__',
-            id: res.get('src_id')+"_"+res.get('dst_id')+"_is_a"
+            rtype : 'is_a',
+            id: res.get('src_id')+"_"+res.get('dst_id')+"_is_a_as_assoc"
           })
         }
       })

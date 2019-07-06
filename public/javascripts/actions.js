@@ -3,10 +3,9 @@ var api = require('./neo4jApi')
 //var $ = require('jquery')
 //require('jqueryui')
 var d3 = require('d3')
-// var d3api = require('./d3api')
 var sim = require('./sim')
 
-gfact = require('./graph')
+var gfact = require('./graph')
 
 
 var sim_conf = {
@@ -15,7 +14,7 @@ var sim_conf = {
   charge: 10,
   link_dist: 30,
   link_strength:0.5,
-  alphaTarget: 0.05
+  alphaTarget: 0.01
 }
 
 AG = null
