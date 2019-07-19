@@ -8,13 +8,30 @@ var sim = require('./sim')
 var gfact = require('./graph')
 
 
-var sim_conf = {
+var ent_conf = {
   node_r: 10,
-  node_bnd: 25,
-  charge: 10,
-  link_dist: 30,
-  link_strength:0.5,
-  alphaTarget: 0.01
+  node_bnd: 30,
+  charge: 100,
+  charge_over_od:10,
+  link_dist: 100,
+  link_strength: 0.7,
+  alphaTarget: 0.01,
+  alphaDecay: 0.06,
+  velocityDecay: 0.4,
+  centerForce: true
+}
+
+var asc_conf = {
+  node_r: 10,
+  node_bnd: 30,
+  charge: 100,
+  charge_over_od:10,
+  link_dist: 100,
+  link_strength: 0.7,
+  alphaTarget: 0.01,
+  alphaDecay: 0.06,
+  velocityDecay: 0.4,
+  centerForce: false
 }
 
 AG = null
@@ -62,8 +79,8 @@ $(function () {
   })
   // establish ht, wd
   $("#graph_tabs").tabs("option","active",0)
-  sim_conf.wid = $("#graph").width()
-  sim_conf.ht =  $("#graph").height()
+  ent_conf.wid = asc_conf.wid = $("#graph").width()
+  ent_conf.ht = asc_conf.ht =  $("#graph").height()
 
 });
 
@@ -168,9 +185,9 @@ function update_assoc_graph(assoc, remove) {
     }
   }
   if (!AG && _.size(assoc_graph)) { // init graph and render
-    AG = new gfact.Graph(assoc_graph, sim_conf, "#ascgraph")
+    AG = new gfact.Graph(assoc_graph, asc_conf, "#ascgraph")
     AG.draw(_annotate_nodes,null)
-    graphControlsSetup("#ascgraph",AG)
+    graphControlsSetup("#ascgraph",AG,asc_conf)
   }
   else {
     AG.join(assoc_graph, _annotate_nodes)
@@ -245,13 +262,13 @@ function showNeighbors(cls_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      var G = new gfact.Graph(graph,ent_conf,"#graph")
       G.draw(_annotate_nodes, cls_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      graphControlsSetup("#graph",G)
+      graphControlsSetup("#graph",G,ent_conf)
     })
 
 
@@ -264,13 +281,13 @@ function showAncestors(cls_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      var G = new gfact.Graph(graph,ent_conf,"#graph")
       G.draw(_annotate_nodes, cls_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      graphControlsSetup("#graph",G)
+      graphControlsSetup("#graph",G,ent_conf)
     })
 }
 
@@ -281,13 +298,13 @@ function showClassAndSibs(prop_id) {
     .then(graph => {
       if (_.isEmpty(graph))
         return null
-      var G = new gfact.Graph(graph,sim_conf,"#graph")
+      var G = new gfact.Graph(graph,ent_conf,"#graph")
       G.draw(_annotate_nodes, prop_id)
       G.rendered.nodes
         .on("click", (d) => showEnt(d.id))
       G.rendered.node_lbls
         .on("click", (d) => showEnt(d.id))
-      graphControlsSetup("#graph",G)
+      graphControlsSetup("#graph",G,ent_conf)
     })
 }
 
@@ -366,15 +383,47 @@ function assocControlsSetup(r) {
     })
 }
 
-function graphControlsSetup (container, graph) {
+function graphControlsSetup (container, graph, conf) {
   var cntr = container.match(/^#(.*)/)[1];
   if (!cntr) {
     console.error("No name base in '"+container+"'");
     return false
   }
+  if (conf.centerForce) {
+    $("#center_"+cntr)
+      .removeClass('btn-secondary')
+      .addClass('btn-info')
+    $("#free_"+cntr)
+      .removeClass('btn-info')
+      .addClass('btn-secondary')
+  } else {
+    $("#center_"+cntr)
+      .removeClass('btn-info')
+      .addClass('btn-secondary')
+    $("#free_"+cntr)
+      .removeClass('btn-secondary')
+      .addClass('btn-info')
+  }
   $("#heat_"+cntr).click( () => {graph.heat()} )
   $("#freeze_"+cntr).click( () => {graph.freeze()} )
-  $("#center_"+cntr).click( () => {graph.center_on()} )
-  $("#free_"+cntr).click( () => {graph.center_off()} )
+  $("#center_"+cntr).click( () => {
+    graph.center_on()
+    $("#center_"+cntr)
+      .removeClass('btn-secondary')
+      .addClass('btn-info')
+    $("#free_"+cntr)
+      .removeClass('btn-info')
+      .addClass('btn-secondary')
+  } )
+  $("#free_"+cntr).click( () => {
+    graph.center_off()
+    $("#center_"+cntr)
+      .removeClass('btn-info')
+      .addClass('btn-secondary')
+    $("#free_"+cntr)
+      .removeClass('btn-secondary')
+      .addClass('btn-info')
+    
+  } )
   return true
 }

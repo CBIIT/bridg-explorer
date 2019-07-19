@@ -17,20 +17,20 @@ function Graph (data, sim_conf, svg_container) {
     this.conf = conf
     if (this.sim) { // apply config
       this.sim.stop()
-      if (this.sim.force('center')) {
-        this.sim.force('center')
-          .x(conf.wid/2)
-        this.sim.force('center')
-          .y(conf.ht/2)
-      }
+      this._force_center
+        .x(conf.wid/2)
+      this._force_center
+        .y(conf.ht/2)
       this.sim.force('charge')
         .strength(conf.charge)
-        .distanceMax(2*conf.node_bnd)
+        .distanceMax(conf.charge_over_od*conf.node_bnd)
       this.sim.force('links')
         .distance(conf.link_dist)
         .strength(conf.link_strength)
       this.sim.force('collision')
         .radius(conf.node_bnd)
+      this.sim.alphaDecay( conf.alphaDecay )
+      this.sim.velocityDecay( conf.velocityDecay )
       this.sim.alphaTarget(conf.alphaTarget).restart()
     }
   }
@@ -47,7 +47,7 @@ function Graph (data, sim_conf, svg_container) {
     this.sim = d3.forceSimulation(this.sim_data.nodes)
       .force('charge', d3.forceManyBody())
       .force('links', d3.forceLink(this.sim_data.links).id( d => d.id))
-      .force('center', this._force_center)
+      .force('center', this.conf.centerForce ? this._force_center : null)
       .force('collision', d3.forceCollide())
     this.set_parms(this.conf)
 

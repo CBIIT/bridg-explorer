@@ -1,8 +1,10 @@
 div#ent_pane('card')
   div#graph_display_head(class='card-header')
-    button#heat_graph(type='button' class='mr-2 btn-secondary btn-small') Heat
-    button#freeze_graph(type='button' class='mr-2 btn-secondary bth-small') Freeze
-    button#center_graph(type='button' class='mr-2 btn-secondary btn-small') Center
-    button#free_graph(type='button' class='mr-2 btn-secondary bth-small') Free
+    div(class='btn-group' role='group')
+            button#heat_graph(type='button' class='mr-2 btn-secondary btn-small') Heat
+            button#freeze_graph(type='button' class='mr-2 btn-secondary btn-small') Freeze
+    div#ctr_toggle(class='btn-group mr-2' role='group')
+            button#center_graph(type='button' class='btn-secondary btn-small') Center
+            button#free_graph(type='button' class='btn-secondary btn-small') Free
   div#graph_display(class='card-body graph-disp')
     svg#graph(width="100%",height="200%")
