@@ -56,7 +56,7 @@ $(function () {
       showClassAndSibs(ndh.attr('data-entity-id'))
   })
 
-  var hidem = ["#results_", "#assoc_", "#assoct_", "#ascgraph_", "#graph_","#node_"]
+  var hidem = ["#results_", "#assoc_", "#assoct_","#node_"]
   hidem
     .forEach( stem => {
       $(stem+"display_head")
@@ -86,6 +86,7 @@ $(function () {
 
 function entSearch(e, stmtKey) {
   var query = $("#query-inp").val();
+  $("#new-results").attr("id","");
   var minscore = _.toNumber($("#match-score-inp").val());
   api
     .searchEnts(query,minscore,stmtKey)
@@ -96,10 +97,12 @@ function entSearch(e, stmtKey) {
       }
       clearTable("table#results")
       var t = $("table#results tbody")
+      var first = 1
       entities.forEach(ent => {
 	if (ent == null) { console.log("ent is null") }
         else {
-          var r = $("<tr>"+
+          var r = $(
+                    "<tr"+(first ? ' id="new-results" ' : "") +">"+
                     tdEntity(ent,1)+
                     "<td>"+ent.ent+"</td>"+
                     (ent.owning_class ?
@@ -112,9 +115,11 @@ function entSearch(e, stmtKey) {
           r.find("[type=checkbox]").click(
             e => { e.stopPropagation() }
           )
+          first = 0
           assocControlsSetup(r)
 	}
       });
+      document.getElementById('new-results').scrollIntoView();
     });
 }
 
@@ -205,18 +210,20 @@ function showAssoc(cls_id, getAssocFunction, outgoing) {
       if (_.isEmpty(assocs)) {
         return null
       }
+      $("#new-assoc-results") && $("#new-assoc-results").attr("id","")
       var t = $("table#assocs")
+      var first = 1
       assocs.forEach( assoc => {
         if (assoc == null) console.error("assoc is null")
         else {
-          var r = $("<tr>"+
+          var r = $( "<tr"+(first ? ' id="new-assoc-results" ' : "") +">"+
                     tdEntity(assoc.src,1) +
                     "<td class='role source col-1'>"+assoc.src.role+"</td>"+
                     "<td class='assoc col-1'>"+assoc.rtype+"</td>"+
                     "<td class='role dest col-1'>"+assoc.dst.role+"</td>"+
                     tdEntity(assoc.dst,0) +
                     "</tr>")
-          
+          first = 0
           var key = assoc.src.title +"-"+assoc.src.role+"-"+assoc.rtype+"-"+assoc.dst.role+"-"+ assoc.dst.title
           if (!assoc_list[key]) {
             r.appendTo(t)
@@ -244,6 +251,8 @@ function showAssoc(cls_id, getAssocFunction, outgoing) {
           }
         }
       })
+      document.getElementById('new-assoc-results').scrollIntoView()
+
     })
     .catch( err => { console.log("Barfed in showAssoc", err) })
 }
@@ -365,7 +374,7 @@ function assocControlsSetup(r) {
     e => {
       e.stopPropagation()
       var r = e.target.closest("tr")
-      r.remove(); } )
+      r.remove() } )
   r.find("td.entity").click(
     function () {
       showEnt($(this).attr('data-entity-id'))
