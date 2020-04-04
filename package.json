@@ -9,7 +9,7 @@
     "unwatch": "PID=$(ps | grep watchify | grep -v grep | { read i j ; echo $i ; }) ; [[ -n $PID ]] && kill $PID ; exit 0"
   },
   "dependencies": {
-    "acorn": "^6.1.1",
+    "acorn": "^6.4.1",
       "bootstrap": "^4.3.1",
       "browserify":"~16.2.3",
     "clean-css": ">=4.1.11",
