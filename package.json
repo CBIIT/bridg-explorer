@@ -14,7 +14,7 @@
       "browserify":"~16.2.3",
     "clean-css": ">=4.1.11",
     "cookie-parser": "~1.4.3",
-    "d3": "^5.9.2",
+    "d3": "^7.6.1",
     "debug": "~2.6.9",
     "express": "~4.16.0",
     "http-errors": "~1.6.2",
